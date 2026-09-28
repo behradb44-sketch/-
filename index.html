@@ -545,7 +545,6 @@ const send =
 
 let messages = [];
 
-
 let busy = false;
 
 
@@ -556,15 +555,27 @@ let busy = false;
 
 function save(){
 
-    localStorage.setItem(
+    try{
 
-        "BEHRAD_AI_CHAT",
+        localStorage.setItem(
 
-        JSON.stringify(
-            messages
-        )
+            "BEHRAD_AI_CHAT",
 
-    );
+            JSON.stringify(
+                messages
+            )
+
+        );
+
+    }
+    catch(error){
+
+        console.error(
+            "Storage error:",
+            error
+        );
+
+    }
 
 }
 
@@ -583,22 +594,38 @@ function load(){
             return;
 
 
-        messages =
+        const parsed =
             JSON.parse(
                 saved
             );
 
 
+        if(!Array.isArray(parsed))
+            return;
+
+
+        messages =
+            parsed;
+
+
         messages.forEach(
             msg => {
 
-                addMessage(
+                if(
+                    msg &&
+                    msg.role &&
+                    typeof msg.content === "string"
+                ){
 
-                    msg.role,
+                    addMessage(
 
-                    msg.content
+                        msg.role,
 
-                );
+                        msg.content
+
+                    );
+
+                }
 
             }
         );
@@ -614,7 +641,10 @@ function load(){
     }
     catch(error){
 
-        console.log(error);
+        console.error(
+            "Load error:",
+            error
+        );
 
     }
 
@@ -687,6 +717,9 @@ function addMessage(
 
 function addLoading(){
 
+    removeLoading();
+
+
     const wrapper =
         document.createElement(
             "div"
@@ -739,8 +772,66 @@ function removeLoading(){
         );
 
 
-    if(loading)
+    if(loading){
+
         loading.remove();
+
+    }
+
+}
+
+
+/* ==========================
+   GET ERROR MESSAGE
+========================== */
+
+
+function getServerError(
+    data,
+    response
+){
+
+    if(data){
+
+        if(
+            typeof data.error ===
+            "string"
+        ){
+
+            return data.error;
+
+        }
+
+
+        if(
+            data.details &&
+            data.details.error &&
+            data.details.error.message
+        ){
+
+            return data.details.error.message;
+
+        }
+
+
+        if(
+            data.details &&
+            typeof data.details ===
+            "string"
+        ){
+
+            return data.details;
+
+        }
+
+    }
+
+
+    return (
+        "خطای سرور (" +
+        response.status +
+        ")"
+    );
 
 }
 
@@ -811,8 +902,10 @@ async function sendMessage(){
                         "POST",
 
                     headers:{
+
                         "Content-Type":
                             "application/json"
+
                     },
 
                     body:
@@ -827,40 +920,65 @@ async function sendMessage(){
             );
 
 
-        const data =
-            await response.json();
+        let data;
+
+
+        try{
+
+            data =
+                await response.json();
+
+        }
+        catch(jsonError){
+
+            throw new Error(
+                "سرور پاسخ JSON معتبر ارسال نکرد."
+            );
+
+        }
+
+
+        console.log(
+            "BEHRAD AI SERVER RESPONSE:",
+            data
+        );
 
 
         if(!response.ok){
 
             throw new Error(
 
-                data?.details
-                ?.error
-                ?.message
-
-                ||
-
-                data?.error
-
-                ||
-
-                "خطای سرور"
+                getServerError(
+                    data,
+                    response
+                )
 
             );
 
         }
 
 
+        /*
+         * server.py returns:
+         *
+         * {
+         *   success: true,
+         *   reply: "..."
+         * }
+         *
+         * So we must read data.reply
+         */
+
         const answer =
-            data
-            ?.choices
-            ?.[0]
-            ?.message
-            ?.content;
+            data?.reply;
 
 
-        if(!answer){
+        if(
+            !answer ||
+            typeof answer !==
+            "string" ||
+            !answer.trim()
+        ){
 
             throw new Error(
                 "پاسخ خالی از سرور دریافت شد."
@@ -898,17 +1016,26 @@ async function sendMessage(){
         removeLoading();
 
 
+        const errorText =
+            error instanceof Error
+            ? error.message
+            : String(error);
+
+
         addMessage(
 
             "assistant",
 
             "❌ خطا:\n\n" +
-            error.message
+            errorText
 
         );
 
+
         console.error(
+            "BEHRAD AI ERROR:",
             error
+
         );
 
     }
@@ -1005,7 +1132,6 @@ input.addEventListener(
 
 load();
 
-
 input.focus();
 
 
@@ -1014,4 +1140,4 @@ input.focus();
 
 </body>
 
-  </html>
+</html>
