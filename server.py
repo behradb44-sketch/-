@@ -2,7 +2,14 @@ import os
 import json
 import requests
 
-from flask import Flask, request, jsonify, Response, send_from_directory
+from flask import (
+    Flask,
+    request,
+    jsonify,
+    Response,
+    send_from_directory,
+    stream_with_context
+)
 
 app = Flask(__name__, static_folder=".", static_url_path="")
 
@@ -17,26 +24,25 @@ MAX_TOTAL_CHARS = 45000
 
 
 SYSTEM_PROMPT = """
-تو BEHRAD AI هستی؛ یک دستیار هوش مصنوعی فارسی‌زبان قدرتمند.
+تو BEHRAD AI هستی؛ یک دستیار هوش مصنوعی فارسی‌زبان.
 
-اطلاعات هویتی پروژه:
+اطلاعات پروژه:
 - صاحب BEHRAD AI: بهراد محمدی
 - سازنده BEHRAD AI: بهراد محمدی
-- نام مستعار و برند سازنده: بهراد ام پلیر
-- نام انگلیسی برند: BEHRAD M PLAYER
+- نام مستعار سازنده: بهراد ام پلیر
+- نام برند: BEHRAD M PLAYER
 
 اگر کاربر درباره صاحب، سازنده یا مالک BEHRAD AI پرسید،
-با اطمینان بگو:
+بگو:
 «صاحب و سازنده BEHRAD AI، بهراد محمدی ملقب به بهراد ام پلیر (BEHRAD M PLAYER) است.»
 
 قوانین:
-- فارسی را کاملاً طبیعی و خوانا بنویس.
-- پاسخ‌ها را با UTF-8 صحیح تولید کن.
-- اگر کاربر فارسی حرف زد، فارسی جواب بده.
-- اگر کاربر انگلیسی حرف زد، می‌توانی انگلیسی پاسخ بدهی.
+- اگر کاربر فارسی صحبت کرد، فارسی و کاملاً خوانا پاسخ بده.
+- اگر کاربر انگلیسی صحبت کرد، انگلیسی پاسخ بده.
+- پاسخ طبیعی و دوستانه باشد.
 - در برنامه‌نویسی کد کامل و قابل استفاده ارائه کن.
-- لحن دوستانه، طبیعی و مفید داشته باش.
-- از پاسخ‌های بی‌دلیل خیلی طولانی خودداری کن.
+- برای اطلاعات جدید، در صورت نیاز از جستجوی وب استفاده کن.
+- فارسی را با UTF-8 صحیح تولید کن.
 """
 
 
@@ -62,25 +68,32 @@ def health():
 
 
 def normalize_content(content):
+
     if isinstance(content, str):
         return content[:MAX_MESSAGE_CHARS]
 
     if isinstance(content, list):
+
         result = []
 
         for part in content:
+
             if not isinstance(part, dict):
                 continue
 
             ptype = part.get("type")
 
             if ptype == "text":
+
                 result.append({
                     "type": "text",
-                    "text": str(part.get("text", ""))[:MAX_MESSAGE_CHARS]
+                    "text": str(
+                        part.get("text", "")
+                    )[:MAX_MESSAGE_CHARS]
                 })
 
             elif ptype == "image_url":
+
                 image_url = part.get("image_url")
 
                 if isinstance(image_url, dict):
@@ -101,17 +114,18 @@ def normalize_content(content):
 
 
 def clean_messages(messages):
+
     if not isinstance(messages, list):
         return []
 
     cleaned = []
 
-    # فقط آخرین 12 پیام
     messages = messages[-MAX_HISTORY:]
 
     total_chars = 0
 
     for msg in messages:
+
         if not isinstance(msg, dict):
             continue
 
@@ -120,14 +134,22 @@ def clean_messages(messages):
         if role not in ("user", "assistant"):
             continue
 
-        content = normalize_content(msg.get("content", ""))
+        content = normalize_content(
+            msg.get("content", "")
+        )
 
         if isinstance(content, str):
+
             total_chars += len(content)
+
         else:
+
             for part in content:
+
                 if part.get("type") == "text":
-                    total_chars += len(part.get("text", ""))
+                    total_chars += len(
+                        part.get("text", "")
+                    )
 
         if total_chars > MAX_TOTAL_CHARS:
             break
@@ -141,18 +163,31 @@ def clean_messages(messages):
 
 
 def openrouter_headers():
+
     return {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json; charset=utf-8",
-        "Accept": "application/json",
-        "HTTP-Referer": "https://behradb44-sketch.github.io/behrad-m-player/",
-        "X-Title": "BEHRAD AI"
+        "Authorization":
+            f"Bearer {OPENROUTER_API_KEY}",
+
+        "Content-Type":
+            "application/json; charset=utf-8",
+
+        "Accept":
+            "text/event-stream",
+
+        "HTTP-Referer":
+            "https://behradb44-sketch.github.io/behrad-m-player/",
+
+        "X-Title":
+            "BEHRAD AI"
     }
 
 
-def openrouter_payload(messages, stream=False):
+def create_payload(messages, stream=False):
+
     return {
+
         "model": MODEL,
+
         "messages": [
             {
                 "role": "system",
@@ -160,14 +195,17 @@ def openrouter_payload(messages, stream=False):
             },
             *messages
         ],
+
         "temperature": 0.7,
+
         "max_tokens": 3000,
+
         "stream": stream,
 
-        # جستجوی وب حذف نشده
         "tools": [
             {
                 "type": "openrouter:web_search",
+
                 "parameters": {
                     "engine": "auto",
                     "max_results": 5,
@@ -178,22 +216,58 @@ def openrouter_payload(messages, stream=False):
     }
 
 
+def make_sse(event, data):
+
+    text = json.dumps(
+        data,
+        ensure_ascii=False,
+        separators=(",", ":")
+    )
+
+    payload = (
+        f"event: {event}\n"
+        f"data: {text}\n\n"
+    )
+
+    return payload.encode("utf-8")
+
+
+# =========================================================
+# NORMAL CHAT
+# =========================================================
+
 @app.route("/api/chat", methods=["POST"])
 def chat():
+
     if not OPENROUTER_API_KEY:
-        return error_response("OPENROUTER_API_KEY تنظیم نشده است.", 500)
+
+        return error_response(
+            "OPENROUTER_API_KEY تنظیم نشده است.",
+            500
+        )
 
     try:
-        data = request.get_json(force=True, silent=False)
+
+        data = request.get_json(
+            force=True,
+            silent=False
+        )
 
         messages = clean_messages(
             data.get("messages", [])
         )
 
         if not messages:
-            return error_response("پیامی دریافت نشد.", 400)
 
-        payload = openrouter_payload(messages, stream=False)
+            return error_response(
+                "پیامی دریافت نشد.",
+                400
+            )
+
+        payload = create_payload(
+            messages,
+            stream=False
+        )
 
         response = requests.post(
             OPENROUTER_URL,
@@ -203,10 +277,11 @@ def chat():
         )
 
         if response.status_code != 200:
+
             try:
                 details = response.json()
             except Exception:
-                details = response.text[:2000]
+                details = response.text[:3000]
 
             return jsonify({
                 "success": False,
@@ -216,13 +291,26 @@ def chat():
 
         result = response.json()
 
+        choices = result.get(
+            "choices",
+            []
+        )
+
+        if not choices:
+
+            return error_response(
+                "OpenRouter پاسخ خالی برگرداند.",
+                502
+            )
+
         answer = (
-            result.get("choices", [{}])[0]
+            choices[0]
             .get("message", {})
             .get("content", "")
         )
 
         if not answer:
+
             answer = "مدل پاسخ متنی برنگرداند."
 
         return jsonify({
@@ -232,274 +320,432 @@ def chat():
         })
 
     except Exception as e:
+
         return error_response(
             f"خطای سرور: {str(e)}",
             500
         )
 
 
-def sse_bytes(event, data):
-    """
-    مهم‌ترین بخش رفع مشکل فارسی:
-    خروجی SSE مستقیماً به UTF-8 bytes تبدیل می‌شود.
-    """
-    payload = json.dumps(
-        data,
-        ensure_ascii=False,
-        separators=(",", ":")
-    )
-
-    text = (
-        f"event: {event}\n"
-        f"data: {payload}\n\n"
-    )
-
-    return text.encode("utf-8")
-
+# =========================================================
+# STREAMING
+# =========================================================
 
 @app.route("/api/chat/stream", methods=["POST"])
 def chat_stream():
+
     if not OPENROUTER_API_KEY:
+
         return Response(
-            sse_bytes(
+            make_sse(
                 "error",
-                {"message": "OPENROUTER_API_KEY تنظیم نشده است."}
+                {
+                    "message":
+                        "OPENROUTER_API_KEY تنظیم نشده است."
+                }
             ),
             status=500,
-            content_type="text/event-stream; charset=utf-8"
+            content_type=
+                "text/event-stream; charset=utf-8"
         )
 
+    # -----------------------------------------------------
+    # نکته مهم:
+    # request را همین‌جا می‌خوانیم، قبل از generator.
+    # -----------------------------------------------------
+
     try:
-        data = request.get_json(force=True, silent=False)
+
+        data = request.get_json(
+            force=True,
+            silent=False
+        )
 
         messages = clean_messages(
             data.get("messages", [])
         )
 
-        if not messages:
-            return Response(
-                sse_bytes(
-                    "error",
-                    {"message": "پیامی دریافت نشد."}
-                ),
-                status=400,
-                content_type="text/event-stream; charset=utf-8"
-            )
+    except Exception as e:
 
-        payload = openrouter_payload(messages, stream=True)
-
-        upstream = requests.post(
-            OPENROUTER_URL,
-            headers=openrouter_headers(),
-            json=payload,
-            stream=True,
-            timeout=(30, 180)
-        )
-
-        if upstream.status_code != 200:
-
-            try:
-                raw_error = upstream.content
-
-                error_text = raw_error.decode(
-                    "utf-8",
-                    errors="replace"
-                )
-
-                try:
-                    error_data = json.loads(error_text)
-                except Exception:
-                    error_data = error_text[:3000]
-
-            except Exception as e:
-                error_data = str(e)
-
-            yield sse_bytes(
+        return Response(
+            make_sse(
                 "error",
                 {
-                    "message": "OpenRouter خطا داد.",
-                    "details": error_data
+                    "message":
+                        f"درخواست نامعتبر است: {str(e)}"
+                }
+            ),
+            status=400,
+            content_type=
+                "text/event-stream; charset=utf-8"
+        )
+
+    if not messages:
+
+        return Response(
+            make_sse(
+                "error",
+                {
+                    "message":
+                        "پیامی دریافت نشد."
+                }
+            ),
+            status=400,
+            content_type=
+                "text/event-stream; charset=utf-8"
+        )
+
+    payload = create_payload(
+        messages,
+        stream=True
+    )
+
+    # -----------------------------------------------------
+    # Generator جدا
+    # -----------------------------------------------------
+
+    @stream_with_context
+    def generate():
+
+        try:
+
+            upstream = requests.post(
+                OPENROUTER_URL,
+
+                headers=openrouter_headers(),
+
+                json=payload,
+
+                stream=True,
+
+                timeout=(30, 180)
+            )
+
+            if upstream.status_code != 200:
+
+                try:
+
+                    raw = upstream.content
+
+                    error_text = raw.decode(
+                        "utf-8",
+                        errors="replace"
+                    )
+
+                    try:
+                        error_data =
+                            json.loads(error_text)
+                    except Exception:
+                        error_data = error_text[:3000]
+
+                except Exception as e:
+
+                    error_data = str(e)
+
+                yield make_sse(
+                    "error",
+                    {
+                        "message":
+                            "OpenRouter خطا داد.",
+
+                        "details":
+                            error_data
+                    }
+                )
+
+                yield make_sse(
+                    "done",
+                    {}
+                )
+
+                return
+
+            yield make_sse(
+                "start",
+                {
+                    "model": MODEL
                 }
             )
 
-            yield sse_bytes(
-                "done",
-                {}
-            )
+            buffer = b""
 
-            return
+            for chunk in upstream.iter_content(
+                chunk_size=1024
+            ):
 
-        # اعلام شروع پاسخ
-        yield sse_bytes(
-            "start",
-            {
-                "model": MODEL
-            }
-        )
+                if not chunk:
+                    continue
 
-        buffer = b""
+                buffer += chunk
 
-        for raw_chunk in upstream.iter_content(
-            chunk_size=1024
-        ):
-            if not raw_chunk:
-                continue
+                while b"\n\n" in buffer:
 
-            buffer += raw_chunk
+                    raw_event, buffer = \
+                        buffer.split(
+                            b"\n\n",
+                            1
+                        )
 
-            while b"\n\n" in buffer:
+                    event_text = raw_event.decode(
+                        "utf-8",
+                        errors="replace"
+                    )
 
-                raw_event, buffer = buffer.split(
-                    b"\n\n",
-                    1
-                )
+                    for line in event_text.splitlines():
 
-                # UTF-8 دقیق
-                event_text = raw_event.decode(
+                        if not line.startswith(
+                            "data:"
+                        ):
+                            continue
+
+                        data_text = \
+                            line[5:].strip()
+
+                        if not data_text:
+                            continue
+
+                        if data_text == "[DONE]":
+
+                            yield make_sse(
+                                "done",
+                                {}
+                            )
+
+                            continue
+
+                        try:
+
+                            chunk_data = \
+                                json.loads(
+                                    data_text
+                                )
+
+                        except json.JSONDecodeError:
+
+                            continue
+
+                        choices = \
+                            chunk_data.get(
+                                "choices",
+                                []
+                            )
+
+                        if not choices:
+                            continue
+
+                        choice = choices[0]
+
+                        delta = \
+                            choice.get(
+                                "delta",
+                                {}
+                            )
+
+                        # --------------------------
+                        # TEXT
+                        # --------------------------
+
+                        content = \
+                            delta.get(
+                                "content"
+                            )
+
+                        if content:
+
+                            yield make_sse(
+                                "token",
+                                {
+                                    "text":
+                                        content
+                                }
+                            )
+
+                        # --------------------------
+                        # REASONING
+                        # --------------------------
+
+                        reasoning = (
+                            delta.get(
+                                "reasoning"
+                            )
+                            or
+                            delta.get(
+                                "reasoning_content"
+                            )
+                        )
+
+                        if reasoning:
+
+                            yield make_sse(
+                                "reasoning",
+                                {
+                                    "text":
+                                        reasoning
+                                }
+                            )
+
+                        # --------------------------
+                        # TOOL / SEARCH
+                        # --------------------------
+
+                        tool_calls = \
+                            delta.get(
+                                "tool_calls"
+                            )
+
+                        if tool_calls:
+
+                            yield make_sse(
+                                "search",
+                                {
+                                    "status":
+                                        "🌐 در حال جستجوی وب..."
+                                }
+                            )
+
+            # باقی‌مانده buffer
+
+            if buffer.strip():
+
+                event_text = buffer.decode(
                     "utf-8",
                     errors="replace"
                 )
 
                 for line in event_text.splitlines():
 
-                    if not line.startswith("data:"):
+                    if not line.startswith(
+                        "data:"
+                    ):
                         continue
 
-                    data_text = line[5:].strip()
+                    data_text = \
+                        line[5:].strip()
 
                     if not data_text:
                         continue
 
                     if data_text == "[DONE]":
-                        yield sse_bytes(
-                            "done",
-                            {}
-                        )
                         continue
 
                     try:
-                        chunk = json.loads(data_text)
 
-                    except json.JSONDecodeError:
+                        chunk_data = \
+                            json.loads(
+                                data_text
+                            )
+
+                    except Exception:
+
                         continue
 
-                    choices = chunk.get("choices", [])
+                    choices = \
+                        chunk_data.get(
+                            "choices",
+                            []
+                        )
 
                     if not choices:
                         continue
 
-                    choice = choices[0]
-                    delta = choice.get("delta", {})
+                    delta = \
+                        choices[0].get(
+                            "delta",
+                            {}
+                        )
 
-                    # متن پاسخ
-                    content = delta.get("content")
+                    content = \
+                        delta.get(
+                            "content"
+                        )
 
                     if content:
-                        yield sse_bytes(
+
+                        yield make_sse(
                             "token",
                             {
-                                "text": content
+                                "text":
+                                    content
                             }
                         )
 
-                    # reasoning
-                    reasoning = (
-                        delta.get("reasoning")
-                        or delta.get("reasoning_content")
-                    )
-
-                    if reasoning:
-                        yield sse_bytes(
-                            "reasoning",
-                            {
-                                "text": reasoning
-                            }
-                        )
-
-                    # Tool / search
-                    tool_calls = delta.get("tool_calls")
-
-                    if tool_calls:
-                        yield sse_bytes(
-                            "search",
-                            {
-                                "status": "در حال جستجو در وب..."
-                            }
-                        )
-
-        if buffer.strip():
-
-            event_text = buffer.decode(
-                "utf-8",
-                errors="replace"
+            yield make_sse(
+                "done",
+                {}
             )
 
-            for line in event_text.splitlines():
+        except requests.exceptions.Timeout:
 
-                if not line.startswith("data:"):
-                    continue
+            yield make_sse(
+                "error",
+                {
+                    "message":
+                        "زمان پاسخ سرور تمام شد."
+                }
+            )
 
-                data_text = line[5:].strip()
+            yield make_sse(
+                "done",
+                {}
+            )
 
-                if data_text == "[DONE]":
-                    continue
+        except Exception as e:
 
-                try:
-                    chunk = json.loads(data_text)
-                except Exception:
-                    continue
+            yield make_sse(
+                "error",
+                {
+                    "message":
+                        f"خطای سرور: {str(e)}"
+                }
+            )
 
-                choices = chunk.get("choices", [])
+            yield make_sse(
+                "done",
+                {}
+            )
 
-                if not choices:
-                    continue
 
-                content = (
-                    choices[0]
-                    .get("delta", {})
-                    .get("content")
-                )
+    return Response(
+        generate(),
 
-                if content:
-                    yield sse_bytes(
-                        "token",
-                        {
-                            "text": content
-                        }
-                    )
+        status=200,
 
-        yield sse_bytes(
-            "done",
-            {}
-        )
+        content_type=
+            "text/event-stream; charset=utf-8",
 
-    except requests.exceptions.Timeout:
-        yield sse_bytes(
-            "error",
-            {
-                "message": "زمان پاسخ سرور تمام شد."
-            }
-        )
+        headers={
+            "Cache-Control":
+                "no-cache, no-transform",
 
-    except Exception as e:
-        yield sse_bytes(
-            "error",
-            {
-                "message": f"خطای سرور: {str(e)}"
-            }
-        )
+            "X-Accel-Buffering":
+                "no",
 
+            "Connection":
+                "keep-alive",
+
+            "Content-Encoding":
+                "identity"
+        }
+    )
+
+
+# =========================================================
+# TEST
+# =========================================================
 
 @app.route("/api/test-ai")
 def test_ai():
+
     if not OPENROUTER_API_KEY:
+
         return error_response(
             "OPENROUTER_API_KEY تنظیم نشده است.",
             500
         )
 
     try:
-        payload = openrouter_payload(
+
+        payload = create_payload(
             [
                 {
                     "role": "user",
@@ -518,22 +764,36 @@ def test_ai():
 
         return Response(
             response.content,
+
             status=response.status_code,
-            content_type="application/json; charset=utf-8"
+
+            content_type=
+                "application/json; charset=utf-8"
         )
 
     except Exception as e:
+
         return error_response(
             str(e),
             500
         )
 
 
+# =========================================================
+# START
+# =========================================================
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
+
+    port = int(
+        os.environ.get(
+            "PORT",
+            10000
+        )
+    )
 
     app.run(
         host="0.0.0.0",
         port=port,
         debug=False
-    )
+                        )
