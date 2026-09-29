@@ -2,505 +2,574 @@
 <html lang="fa" dir="rtl">
 
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
 <title>BEHRAD AI</title>
 
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+
+
 <style>
+
 *{
     box-sizing:border-box;
 }
 
-:root{
-    --bg:#212121;
-    --sidebar:#171717;
-    --panel:#2f2f2f;
-    --panel-hover:#343434;
-    --border:#3d3d3d;
-    --text:#ececec;
-    --muted:#9b9b9b;
-    --green:#10a37f;
-}
 
-html,body{
+html,
+body{
     margin:0;
     width:100%;
     height:100%;
+    background:#212121;
+    color:#ececec;
+    font-family:
+        Tahoma,
+        Arial,
+        sans-serif;
 }
 
+
 body{
-    background:var(--bg);
-    color:var(--text);
-    font-family:Tahoma,Arial,sans-serif;
     overflow:hidden;
 }
 
-/* APP */
+
+/* =====================================================
+   APP
+===================================================== */
 
 .app{
+    display:flex;
     width:100%;
     height:100vh;
-    display:flex;
 }
 
-/* SIDEBAR */
+
+/* =====================================================
+   SIDEBAR
+===================================================== */
 
 .sidebar{
     width:260px;
-    height:100%;
-    background:var(--sidebar);
-    border-left:1px solid #303030;
+    min-width:260px;
+    background:#171717;
+    border-left:1px solid #2b2b2b;
     display:flex;
     flex-direction:column;
-    padding:12px;
+    padding:14px;
 }
 
-.brand{
-    height:48px;
-    display:flex;
-    align-items:center;
-    gap:10px;
-    padding:0 10px;
+
+.logo{
+    font-size:20px;
     font-weight:bold;
-    font-size:16px;
+    padding:12px 10px 18px;
 }
 
-.brand-icon{
-    width:30px;
-    height:30px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    border-radius:8px;
-    background:#10a37f;
-    color:white;
+
+.logo span{
+    color:#10a37f;
 }
+
 
 .new-chat{
-    height:46px;
-    display:flex;
-    align-items:center;
-    gap:10px;
-    padding:0 14px;
-    border:1px solid #3d3d3d;
-    background:transparent;
+    width:100%;
+    border:1px solid #444;
+    background:#212121;
     color:#fff;
     border-radius:8px;
+    padding:11px;
     cursor:pointer;
+    text-align:right;
     font-size:14px;
-    transition:.15s;
 }
+
 
 .new-chat:hover{
     background:#2a2a2a;
 }
 
+
 .history-title{
-    color:#777;
-    font-size:11px;
-    padding:20px 10px 8px;
+    margin-top:24px;
+    margin-bottom:8px;
+    color:#999;
+    font-size:12px;
 }
+
 
 .history{
     flex:1;
     overflow-y:auto;
 }
 
+
 .history-item{
-    width:100%;
-    padding:10px 12px;
-    margin-bottom:2px;
+    padding:10px;
     border-radius:7px;
-    color:#c8c8c8;
+    color:#ccc;
     font-size:13px;
+    cursor:pointer;
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
-    cursor:pointer;
 }
+
 
 .history-item:hover{
     background:#2a2a2a;
 }
 
-.sidebar-bottom{
-    border-top:1px solid #303030;
-    padding-top:10px;
-    color:#777;
-    font-size:11px;
-    text-align:center;
-}
 
-/* MAIN */
+/* =====================================================
+   MAIN
+===================================================== */
 
 .main{
     flex:1;
-    height:100%;
+    min-width:0;
     display:flex;
     flex-direction:column;
-    min-width:0;
+    background:#212121;
 }
 
-/* HEADER */
+
+/* =====================================================
+   HEADER
+===================================================== */
 
 .header{
-    height:60px;
+    height:58px;
+    min-height:58px;
+    border-bottom:1px solid #303030;
     display:flex;
     align-items:center;
-    justify-content:space-between;
     padding:0 22px;
-    border-bottom:1px solid rgba(255,255,255,.06);
-    background:rgba(33,33,33,.92);
-    backdrop-filter:blur(10px);
+    background:#212121;
 }
 
+
 .model-name{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    font-size:14px;
+    font-size:15px;
     font-weight:bold;
 }
 
-.model-arrow{
-    color:#888;
+
+.model-status{
+    margin-right:10px;
+    color:#777;
     font-size:12px;
 }
 
-.header-status{
-    color:#777;
-    font-size:11px;
+
+.status-dot{
+    width:7px;
+    height:7px;
+    display:inline-block;
+    border-radius:50%;
+    background:#10a37f;
+    margin-left:5px;
 }
 
-/* CHAT */
+
+/* =====================================================
+   CHAT
+===================================================== */
 
 .chat{
     flex:1;
     overflow-y:auto;
-    scroll-behavior:smooth;
-    padding:30px 20px 150px;
+    padding:30px 18px 180px;
 }
 
-.chat::-webkit-scrollbar,
-.history::-webkit-scrollbar{
-    width:6px;
+
+.chat-inner{
+    width:min(850px, 100%);
+    margin:auto;
 }
 
-.chat::-webkit-scrollbar-thumb,
-.history::-webkit-scrollbar-thumb{
-    background:#454545;
-    border-radius:10px;
-}
-
-/* WELCOME */
 
 .welcome{
-    max-width:760px;
-    margin:15vh auto 0;
     text-align:center;
+    margin-top:14vh;
 }
 
-.welcome-logo{
-    width:58px;
-    height:58px;
-    margin:0 auto 20px;
-    border-radius:16px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background:#10a37f;
-    font-size:27px;
-}
 
 .welcome h1{
-    margin:0;
     font-size:30px;
-    font-weight:600;
+    margin-bottom:12px;
 }
 
+
 .welcome p{
-    margin-top:12px;
     color:#999;
     font-size:14px;
 }
 
-/* MESSAGE */
+
+/* =====================================================
+   MESSAGE
+===================================================== */
 
 .message{
-    width:100%;
-    max-width:850px;
-    margin:0 auto 28px;
     display:flex;
     gap:14px;
-    align-items:flex-start;
-
-    /* مهم:
-       پیام بلافاصله نمایش داده می‌شود */
-    animation:messageIn .15s ease-out;
+    margin-bottom:30px;
+    line-height:1.9;
 }
 
-@keyframes messageIn{
-    from{
-        opacity:0;
-        transform:translateY(5px);
-    }
-
-    to{
-        opacity:1;
-        transform:translateY(0);
-    }
-}
 
 .avatar{
-    flex-shrink:0;
-    width:30px;
-    height:30px;
+    width:34px;
+    height:34px;
+    min-width:34px;
     border-radius:7px;
     display:flex;
     align-items:center;
     justify-content:center;
     font-size:15px;
-    background:#10a37f;
+    font-weight:bold;
 }
 
-.user .avatar{
+
+.message.user .avatar{
     background:#444;
 }
 
-.bubble{
+
+.message.assistant .avatar{
+    background:#10a37f;
+    color:#fff;
+}
+
+
+.message-content{
+    flex:1;
     min-width:0;
-    max-width:calc(100% - 44px);
-    line-height:1.85;
-    font-size:14px;
-    color:#ececec;
+    font-size:15px;
     overflow-wrap:anywhere;
 }
 
-.user .bubble{
+
+.message.user .message-content{
     background:#2f2f2f;
     padding:10px 14px;
     border-radius:12px;
-    border:1px solid #3b3b3b;
 }
 
-/* MARKDOWN */
 
-.bubble h1,
-.bubble h2,
-.bubble h3{
-    margin-top:22px;
+.message.assistant .message-content{
+    padding-top:2px;
 }
 
-.bubble p{
-    margin:8px 0;
+
+/* =====================================================
+   MARKDOWN
+===================================================== */
+
+.message-content p{
+    margin:0 0 12px;
 }
 
-.bubble ul,
-.bubble ol{
-    padding-right:22px;
+
+.message-content p:last-child{
+    margin-bottom:0;
 }
 
-.bubble a{
-    color:#58a6ff;
+
+.message-content ul,
+.message-content ol{
+    padding-right:25px;
 }
 
-.bubble blockquote{
-    border-right:3px solid #555;
-    margin:15px 0;
-    padding-right:14px;
-    color:#aaa;
-}
 
-/* CODE */
-
-.code-container{
-    position:relative;
-    margin:16px 0;
-    direction:ltr;
-}
-
-.code-container pre{
-    margin:0;
-    padding:42px 15px 15px;
-    background:#0d0d0d;
-    border:1px solid #333;
-    border-radius:10px;
-    overflow-x:auto;
+.message-content pre{
     direction:ltr;
     text-align:left;
+    background:#111;
+    border:1px solid #333;
+    border-radius:8px;
+    padding:16px;
+    overflow-x:auto;
 }
 
-.code-container code{
-    font-family:Consolas,"Courier New",monospace;
-    font-size:13px;
-    line-height:1.7;
+
+.message-content code{
+    font-family:
+        Consolas,
+        monospace;
 }
+
+
+.message-content :not(pre) > code{
+    background:#303030;
+    padding:2px 6px;
+    border-radius:5px;
+}
+
+
+/* =====================================================
+   CODE COPY
+===================================================== */
+
+.code-box{
+    position:relative;
+    margin:12px 0;
+}
+
 
 .copy-code{
     position:absolute;
     top:8px;
-    right:8px;
-    border:1px solid #3d3d3d;
+    left:8px;
+    border:1px solid #444;
     background:#222;
-    color:#bbb;
-    padding:5px 10px;
+    color:#ddd;
     border-radius:6px;
-    font-size:11px;
+    padding:5px 9px;
     cursor:pointer;
+    font-size:11px;
 }
+
 
 .copy-code:hover{
     background:#333;
-    color:white;
 }
 
-/* TYPING */
 
-.typing{
+/* =====================================================
+   THINKING
+===================================================== */
+
+.thinking{
     display:flex;
-    align-items:center;
-    gap:5px;
-    color:#888;
+    flex-direction:column;
+    gap:9px;
+    width:190px;
+}
+
+
+.thinking-label{
+    color:#aaa;
     font-size:13px;
 }
 
-.dot{
-    width:5px;
-    height:5px;
-    border-radius:50%;
-    background:#aaa;
-    animation:blink 1.2s infinite;
+
+.wave{
+    height:28px;
+    display:flex;
+    align-items:center;
+    gap:3px;
 }
 
-.dot:nth-child(2){
-    animation-delay:.2s;
+
+.wave span{
+    display:block;
+    width:3px;
+    height:7px;
+    border-radius:5px;
+    background:#10a37f;
+    animation:wave 1s ease-in-out infinite;
 }
 
-.dot:nth-child(3){
-    animation-delay:.4s;
-}
 
-@keyframes blink{
-    0%,100%{
-        opacity:.25;
+.wave span:nth-child(1){animation-delay:0s}
+.wave span:nth-child(2){animation-delay:.08s}
+.wave span:nth-child(3){animation-delay:.16s}
+.wave span:nth-child(4){animation-delay:.24s}
+.wave span:nth-child(5){animation-delay:.32s}
+.wave span:nth-child(6){animation-delay:.40s}
+.wave span:nth-child(7){animation-delay:.48s}
+.wave span:nth-child(8){animation-delay:.56s}
+.wave span:nth-child(9){animation-delay:.64s}
+.wave span:nth-child(10){animation-delay:.72s}
+.wave span:nth-child(11){animation-delay:.80s}
+.wave span:nth-child(12){animation-delay:.88s}
+
+
+@keyframes wave{
+
+    0%,
+    100%{
+        height:6px;
+        opacity:.45;
     }
 
     50%{
+        height:25px;
         opacity:1;
     }
+
 }
 
-/* COMPOSER */
+
+/* =====================================================
+   SEARCH STATUS
+===================================================== */
+
+.search-status{
+    display:none;
+    align-items:center;
+    gap:9px;
+    background:#292929;
+    border:1px solid #3a3a3a;
+    border-radius:9px;
+    padding:9px 12px;
+    margin-bottom:12px;
+    color:#aaa;
+    font-size:12px;
+}
+
+
+.search-icon{
+    color:#10a37f;
+    font-size:15px;
+}
+
+
+.search-status.active{
+    display:flex;
+}
+
+
+/* =====================================================
+   COMPOSER
+===================================================== */
 
 .composer-area{
-    position:fixed;
+    position:absolute;
     bottom:0;
     right:260px;
     left:0;
-    padding:15px 20px 20px;
+    padding:15px 18px 22px;
     background:
         linear-gradient(
             to top,
             #212121 65%,
-            rgba(33,33,33,0)
+            transparent
         );
 }
 
+
 .composer{
-    width:100%;
-    max-width:850px;
+    width:min(850px, 100%);
     margin:auto;
+    position:relative;
+}
+
+
+.composer-box{
     background:#2f2f2f;
-    border:1px solid #4a4a4a;
-    border-radius:16px;
-    padding:8px;
-    box-shadow:0 5px 30px rgba(0,0,0,.25);
+    border:1px solid #454545;
+    border-radius:15px;
+    padding:12px 50px 12px 52px;
+    box-shadow:
+        0 5px 25px rgba(0,0,0,.25);
 }
 
-.attachment{
-    display:none;
-    margin:0 8px 7px;
-    padding:8px 10px;
-    background:#242424;
-    border-radius:8px;
-    color:#aaa;
-    font-size:11px;
-}
-
-.composer-row{
-    display:flex;
-    align-items:flex-end;
-    gap:5px;
-}
 
 textarea{
-    flex:1;
-    min-height:42px;
+    width:100%;
+    min-height:28px;
     max-height:180px;
     resize:none;
     border:0;
-    outline:0;
+    outline:none;
     background:transparent;
-    color:white;
+    color:#fff;
     font-family:inherit;
     font-size:14px;
-    line-height:1.6;
-    padding:9px 8px;
+    line-height:1.7;
 }
+
 
 textarea::placeholder{
     color:#888;
 }
 
-.tool-btn{
-    width:38px;
-    height:38px;
-    flex-shrink:0;
+
+.send{
+    position:absolute;
+    left:10px;
+    bottom:10px;
+    width:34px;
+    height:34px;
     border:0;
-    border-radius:9px;
-    background:transparent;
-    color:#aaa;
-    font-size:18px;
+    border-radius:8px;
+    background:#10a37f;
+    color:white;
     cursor:pointer;
+    font-size:16px;
 }
 
-.tool-btn:hover{
-    background:#3b3b3b;
-    color:#fff;
+
+.send:hover{
+    background:#0e8f70;
 }
 
-.send-btn{
-    width:38px;
-    height:38px;
-    border:0;
-    border-radius:9px;
-    background:#fff;
-    color:#111;
-    cursor:pointer;
-    font-size:17px;
-    transition:.15s;
-}
 
-.send-btn:hover{
-    transform:scale(1.04);
-}
-
-.send-btn:disabled{
-    opacity:.35;
+.send:disabled{
+    opacity:.45;
     cursor:not-allowed;
 }
 
-.bottom-note{
-    max-width:850px;
-    margin:7px auto 0;
-    text-align:center;
-    color:#777;
-    font-size:10px;
+
+.attach{
+    position:absolute;
+    right:9px;
+    bottom:10px;
+    width:34px;
+    height:34px;
+    border:0;
+    background:transparent;
+    color:#aaa;
+    cursor:pointer;
+    font-size:20px;
 }
 
-/* MOBILE */
 
-@media(max-width:800px){
+.attach:hover{
+    color:#fff;
+}
+
+
+#fileInput{
+    display:none;
+}
+
+
+.file-preview{
+    display:none;
+    margin-bottom:8px;
+    background:#2b2b2b;
+    border:1px solid #444;
+    border-radius:9px;
+    padding:8px 11px;
+    color:#bbb;
+    font-size:12px;
+}
+
+
+.file-preview.active{
+    display:block;
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media(max-width:700px){
 
     .sidebar{
         display:none;
@@ -511,65 +580,75 @@ textarea::placeholder{
     }
 
     .chat{
-        padding:20px 12px 140px;
-    }
-
-    .message{
-        gap:9px;
-    }
-
-    .bubble{
-        font-size:13px;
-    }
-
-    .welcome{
-        margin-top:12vh;
+        padding-left:12px;
+        padding-right:12px;
     }
 
     .welcome h1{
         font-size:25px;
     }
+
+    .message-content{
+        font-size:14px;
+    }
+
+}
+
+
+/* =====================================================
+   SCROLLBAR
+===================================================== */
+
+::-webkit-scrollbar{
+    width:7px;
+}
+
+
+::-webkit-scrollbar-track{
+    background:transparent;
+}
+
+
+::-webkit-scrollbar-thumb{
+    background:#444;
+    border-radius:10px;
+}
+
+
+::-webkit-scrollbar-thumb:hover{
+    background:#555;
 }
 
 </style>
+
 </head>
 
 
 <body>
 
+
 <div class="app">
+
 
     <!-- SIDEBAR -->
 
     <aside class="sidebar">
 
-        <div class="brand">
-
-            <div class="brand-icon">
-                ✦
-            </div>
-
-            <span>
-                BEHRAD AI
-            </span>
-
+        <div class="logo">
+            BEHRAD <span>AI</span>
         </div>
 
 
         <button
             class="new-chat"
-            id="newChatBtn"
+            onclick="newChat()"
         >
-            <span>＋</span>
-
-            <span>
-                گفتگوی جدید
-            </span>
+            ＋ چت جدید
         </button>
 
 
         <div class="history-title">
-            گفتگوها
+            تاریخچه
         </div>
 
 
@@ -578,18 +657,8 @@ textarea::placeholder{
             class="history"
         ></div>
 
-
-        <div class="sidebar-bottom">
-
-            BEHRAD AI
-
-            <br>
-
-            Space Bunny Alpha
-
-        </div>
-
     </aside>
+
 
 
     <!-- MAIN -->
@@ -597,29 +666,28 @@ textarea::placeholder{
     <main class="main">
 
 
+        <!-- HEADER -->
+
         <header class="header">
 
-            <div class="model-name">
+            <div>
 
-                <span>
+                <span class="model-name">
                     Space Bunny Alpha
                 </span>
 
-                <span class="model-arrow">
-                    ▾
+                <span class="model-status">
+
+                    <span class="status-dot"></span>
+
+                    آنلاین
+
                 </span>
 
             </div>
 
-
-            <div
-                id="headerStatus"
-                class="header-status"
-            >
-                آماده
-            </div>
-
         </header>
+
 
 
         <!-- CHAT -->
@@ -627,51 +695,69 @@ textarea::placeholder{
         <section
             id="chat"
             class="chat"
-        ></section>
+        >
+
+            <div
+                id="chatInner"
+                class="chat-inner"
+            >
+
+                <div
+                    id="welcome"
+                    class="welcome"
+                >
+
+                    <h1>
+                        BEHRAD AI
+                    </h1>
+
+                    <p>
+                        سلام بهراد 👋
+                        هرچی می‌خوای بپرس.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
 
 
         <!-- COMPOSER -->
 
         <div class="composer-area">
 
-            <div
-                id="attachment"
-                class="attachment"
-            ></div>
-
-
             <div class="composer">
 
-                <div class="composer-row">
+
+                <div
+                    id="filePreview"
+                    class="file-preview"
+                ></div>
 
 
-                    <input
-                        id="fileInput"
-                        type="file"
-                        hidden
-                        accept="image/*,video/*"
-                    >
+                <div class="composer-box">
+
+                    <textarea
+                        id="messageInput"
+                        rows="1"
+                        placeholder="پیامت رو بنویس..."
+                    ></textarea>
 
 
                     <button
-                        id="attachBtn"
-                        class="tool-btn"
-                        title="آپلود عکس یا ویدئو"
+                        id="attachButton"
+                        class="attach"
+                        title="افزودن فایل"
                     >
                         ＋
                     </button>
 
 
-                    <textarea
-                        id="input"
-                        rows="1"
-                        placeholder="پیامی برای BEHRAD AI بنویس..."
-                    ></textarea>
-
-
                     <button
-                        id="sendBtn"
-                        class="send-btn"
+                        id="sendButton"
+                        class="send"
                         title="ارسال"
                     >
                         ↑
@@ -679,11 +765,13 @@ textarea::placeholder{
 
                 </div>
 
-            </div>
 
+                <input
+                    id="fileInput"
+                    type="file"
+                    accept="image/*,video/*"
+                >
 
-            <div class="bottom-note">
-                BEHRAD AI ممکن است اشتباه کند؛ اطلاعات مهم را بررسی کنید.
             </div>
 
         </div>
@@ -693,10 +781,6 @@ textarea::placeholder{
 </div>
 
 
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
-
 
 <script>
 
@@ -704,33 +788,19 @@ textarea::placeholder{
    CONFIG
 ===================================================== */
 
-const API = window.location.origin;
+const API_STREAM =
+    "/api/chat/stream";
+
+const API_NORMAL =
+    "/api/chat";
+
 
 const STORAGE_KEY =
-    "behrad_ai_professional_v2";
-
-const MAX_HISTORY = 20;
-
-const MAX_IMAGE_MB = 15;
-
-const MAX_VIDEO_MB = 20;
+    "behrad_ai_professional_v3";
 
 
-/* =====================================================
-   سازنده و مالک BEHRAD AI
-===================================================== */
-
-const CREATOR_INFO = `
-نام صاحب، مالک و سازنده BEHRAD AI:
-بهراد محمدی
-
-نام مستعار و برند:
-بهراد ام پلیر (BEHRAD M PLAYER)
-
-BEHRAD AI متعلق به بهراد محمدی، ملقب به بهراد ام پلیر است.
-اگر کاربر درباره سازنده، مالک یا صاحب BEHRAD AI پرسید،
-این اطلاعات را به عنوان اطلاعات هویتی پروژه در نظر بگیر.
-`;
+const MAX_HISTORY =
+    12;
 
 
 /* =====================================================
@@ -741,7 +811,7 @@ let messages = [];
 
 let selectedFile = null;
 
-let sending = false;
+let isSending = false;
 
 
 /* =====================================================
@@ -751,108 +821,84 @@ let sending = false;
 const chat =
     document.getElementById("chat");
 
+const chatInner =
+    document.getElementById("chatInner");
+
+const welcome =
+    document.getElementById("welcome");
+
 const input =
-    document.getElementById("input");
+    document.getElementById("messageInput");
 
-const sendBtn =
-    document.getElementById("sendBtn");
+const sendButton =
+    document.getElementById("sendButton");
 
-const attachBtn =
-    document.getElementById("attachBtn");
+const attachButton =
+    document.getElementById("attachButton");
 
 const fileInput =
     document.getElementById("fileInput");
 
-const attachment =
-    document.getElementById("attachment");
+const filePreview =
+    document.getElementById("filePreview");
 
-const history =
+const historyElement =
     document.getElementById("history");
-
-const headerStatus =
-    document.getElementById("headerStatus");
-
-const newChatBtn =
-    document.getElementById("newChatBtn");
 
 
 /* =====================================================
    LOAD
 ===================================================== */
 
-try{
+load();
 
-    const saved =
-        localStorage.getItem(
-            STORAGE_KEY
-        );
-
-    if(saved){
-
-        const parsed =
-            JSON.parse(saved);
-
-        if(Array.isArray(parsed)){
-
-            messages =
-                parsed
-                .filter(
-                    m =>
-                        m &&
-                        (
-                            m.role === "user" ||
-                            m.role === "assistant"
-                        )
-                )
-                .map(m => ({
-                    role:m.role,
-                    content:
-                        typeof m.content === "string"
-                            ? m.content
-                            : extractText(m.content)
-                }));
-
-        }
-
-    }
-
-}catch(error){
-
-    console.error(
-        "History load error:",
-        error
-    );
-
-    messages = [];
-
-}
+renderHistory();
 
 
 /* =====================================================
-   TEXT EXTRACTION
+   LOAD STORAGE
 ===================================================== */
 
-function extractText(content){
+function load(){
 
-    if(typeof content === "string"){
-        return content;
+    try{
+
+        const saved =
+            localStorage.getItem(
+                STORAGE_KEY
+            );
+
+
+        if(saved){
+
+            const parsed =
+                JSON.parse(saved);
+
+
+            if(Array.isArray(parsed)){
+
+                messages =
+                    parsed.slice(
+                        -MAX_HISTORY
+                    );
+
+            }
+
+        }
+
+    }catch(error){
+
+        console.error(
+            "History load error:",
+            error
+        );
+
+        messages = [];
+
     }
 
-    if(!Array.isArray(content)){
-        return "";
-    }
 
-    return content
-        .filter(
-            part =>
-                part &&
-                part.type === "text"
-        )
-        .map(
-            part =>
-                part.text || ""
-        )
-        .join("\n");
+    renderAll();
 }
 
 
@@ -862,113 +908,113 @@ function extractText(content){
 
 function save(){
 
-    const safe =
-        messages.map(
-            message => ({
-                role:
-                    message.role,
+    try{
 
-                content:
-                    extractText(
-                        message.content
-                    )
-            })
+        const clean =
+            messages
+                .slice(-MAX_HISTORY)
+                .map(message => {
+
+                    return {
+                        role:message.role,
+                        content:
+                            typeof message.content === "string"
+                                ? message.content
+                                : "[رسانه پیوست شد]"
+                    };
+
+                });
+
+
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(clean)
         );
 
-    localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(safe)
+
+    }catch(error){
+
+        console.error(
+            "Save error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   NEW CHAT
+===================================================== */
+
+function newChat(){
+
+    messages = [];
+
+    selectedFile = null;
+
+    localStorage.removeItem(
+        STORAGE_KEY
     );
+
+    clearFile();
+
+    renderAll();
+
+    input.focus();
 }
 
 
 /* =====================================================
-   STATUS
+   RENDER ALL
 ===================================================== */
 
-function setStatus(text){
+function renderAll(){
 
-    headerStatus.textContent =
-        text;
-}
+    chatInner.innerHTML = "";
 
-
-/* =====================================================
-   WELCOME
-===================================================== */
-
-function showWelcome(){
-
-    chat.innerHTML = `
-
-        <div class="welcome">
-
-            <div class="welcome-logo">
-                ✦
-            </div>
-
-            <h1>
-                با BEHRAD AI شروع کن
-            </h1>
-
-            <p>
-                سؤال بپرس، کد بنویس، عکس بفرست و ایده‌هات رو تبدیل به واقعیت کن.
-            </p>
-
-        </div>
-
-    `;
-}
+    chatInner.appendChild(
+        welcome
+    );
 
 
-/* =====================================================
-   RENDER
-===================================================== */
+    if(messages.length){
 
-function render(){
+        welcome.style.display =
+            "none";
 
-    if(!messages.length){
 
-        showWelcome();
+        messages.forEach(
+            message => {
 
-        renderHistory();
+                renderMessage(
+                    message
+                );
 
-        return;
+            }
+        );
+
+    }else{
+
+        welcome.style.display =
+            "block";
+
     }
 
 
-    chat.innerHTML = "";
-
-
-    messages.forEach(
-        (message,index) => {
-
-            renderMessage(
-                message,
-                false
-            );
-
-        }
-    );
-
-
-    scrollToBottom(
-        false
-    );
-
+    scrollBottom();
 
     renderHistory();
-
 }
 
 
 /* =====================================================
-   نمایش فوری پیام
+   RENDER MESSAGE
 ===================================================== */
 
 function renderMessage(
-    message,
-    scroll = true
+    message
 ){
 
     const row =
@@ -976,13 +1022,10 @@ function renderMessage(
             "div"
         );
 
+
     row.className =
         "message " +
-        (
-            message.role === "user"
-                ? "user"
-                : "assistant"
-        );
+        message.role;
 
 
     const avatar =
@@ -990,68 +1033,62 @@ function renderMessage(
             "div"
         );
 
+
     avatar.className =
         "avatar";
 
+
     avatar.textContent =
         message.role === "user"
-            ? "👤"
-            : "✦";
+            ? "ش"
+            : "AI";
 
 
-    const bubble =
+    const content =
         document.createElement(
             "div"
         );
 
-    bubble.className =
-        "bubble";
+
+    content.className =
+        "message-content";
 
 
-    if(message.role === "user"){
+    if(message.thinking){
 
-        /*
-            پیام کاربر مستقیماً از DOM ساخته می‌شود.
-            بنابراین حتی اگر API بعداً خطا بدهد،
-            پیام روی صفحه باقی می‌ماند.
-        */
+        content.innerHTML =
+            thinkingHTML();
 
-        bubble.textContent =
-            extractText(
-                message.content
-            );
+    }
 
-    }else{
+    else if(message.html){
 
-        let html = "";
+        content.innerHTML =
+            message.html;
 
-        try{
+    }
 
-            html =
-                marked.parse(
-                    String(
-                        message.content || ""
-                    )
-                );
+    else{
 
-        }catch(error){
+        if(
+            message.role === "assistant"
+        ){
 
-            html =
-                String(
+            content.innerHTML =
+                renderMarkdown(
                     message.content || ""
                 );
 
-        }
-
-
-        bubble.innerHTML =
-            DOMPurify.sanitize(
-                html
+            addCopyButtons(
+                content
             );
 
-        decorateCode(
-            bubble
-        );
+        }else{
+
+            content.textContent =
+                message.content || "";
+
+        }
 
     }
 
@@ -1061,56 +1098,97 @@ function renderMessage(
     );
 
     row.appendChild(
-        bubble
+        content
     );
 
-    chat.appendChild(
+
+    chatInner.appendChild(
         row
     );
 
 
-    if(scroll){
+    return {
+        row,
+        content
+    };
 
-        scrollToBottom(
-            true
+}
+
+
+/* =====================================================
+   THINKING HTML
+===================================================== */
+
+function thinkingHTML(){
+
+    let bars = "";
+
+    for(
+        let i = 0;
+        i < 12;
+        i++
+    ){
+
+        bars += "<span></span>";
+
+    }
+
+
+    return `
+
+        <div class="thinking">
+
+            <div class="thinking-label">
+                در حال فکر کردن...
+            </div>
+
+            <div class="wave">
+                ${bars}
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+
+/* =====================================================
+   RENDER MARKDOWN
+===================================================== */
+
+function renderMarkdown(
+    text
+){
+
+    try{
+
+        const html =
+            marked.parse(
+                text || ""
+            );
+
+
+        return DOMPurify.sanitize(
+            html
+        );
+
+    }catch(error){
+
+        return DOMPurify.sanitize(
+            text || ""
         );
 
     }
 
-    return row;
 }
 
 
 /* =====================================================
-   SCROLL
+   COPY BUTTONS
 ===================================================== */
 
-function scrollToBottom(
-    smooth = true
-){
-
-    requestAnimationFrame(
-        () => {
-
-            chat.scrollTo({
-                top:chat.scrollHeight,
-                behavior:
-                    smooth
-                        ? "smooth"
-                        : "auto"
-            });
-
-        }
-    );
-
-}
-
-
-/* =====================================================
-   CODE COPY
-===================================================== */
-
-function decorateCode(
+function addCopyButtons(
     container
 ){
 
@@ -1121,16 +1199,11 @@ function decorateCode(
 
 
     blocks.forEach(
-        pre => {
-
-            const parent =
-                pre.parentElement;
-
+        block => {
 
             if(
-                parent &&
-                parent.classList.contains(
-                    "code-container"
+                block.parentElement.classList.contains(
+                    "code-box"
                 )
             ){
 
@@ -1144,17 +1217,19 @@ function decorateCode(
                     "div"
                 );
 
+
             wrapper.className =
-                "code-container";
+                "code-box";
 
 
-            pre.parentNode.insertBefore(
+            block.parentNode.insertBefore(
                 wrapper,
-                pre
+                block
             );
 
+
             wrapper.appendChild(
-                pre
+                block
             );
 
 
@@ -1163,8 +1238,10 @@ function decorateCode(
                     "button"
                 );
 
+
             button.className =
                 "copy-code";
+
 
             button.textContent =
                 "کپی";
@@ -1174,22 +1251,17 @@ function decorateCode(
                 async () => {
 
                     const code =
-                        pre.querySelector(
-                            "code"
-                        )?.innerText ||
-                        pre.innerText;
+                        block.innerText;
 
 
                     try{
 
-                        await navigator
-                            .clipboard
-                            .writeText(
-                                code
-                            );
+                        await navigator.clipboard.writeText(
+                            code
+                        );
 
                         button.textContent =
-                            "✓ کپی شد";
+                            "کپی شد ✓";
 
 
                         setTimeout(
@@ -1228,20 +1300,22 @@ function decorateCode(
 
 function renderHistory(){
 
-    history.innerHTML = "";
+    historyElement.innerHTML = "";
 
 
-    const items =
+    const users =
         messages
-        .filter(
-            m =>
-                m.role === "user"
-        )
-        .slice(-30)
-        .reverse();
+            .filter(
+                message =>
+                    message.role === "user"
+            )
+            .slice(
+                -15
+            )
+            .reverse();
 
 
-    items.forEach(
+    users.forEach(
         message => {
 
             const item =
@@ -1249,61 +1323,24 @@ function renderHistory(){
                     "div"
                 );
 
+
             item.className =
                 "history-item";
 
 
-            const text =
-                extractText(
-                    message.content
-                );
-
-
             item.textContent =
-                text.slice(
-                    0,
-                    60
-                ) ||
-                "گفتگو";
+                message.content
+                    .replace(
+                        /\s+/g,
+                        " "
+                    )
+                    .slice(
+                        0,
+                        55
+                    );
 
 
-            item.onclick =
-                () => {
-
-                    const bubbles =
-                        [...chat.querySelectorAll(
-                            ".user .bubble"
-                        )];
-
-
-                    const target =
-                        bubbles.find(
-                            bubble =>
-                                bubble.textContent
-                                .includes(
-                                    text.slice(
-                                        0,
-                                        30
-                                    )
-                                )
-                        );
-
-
-                    if(target){
-
-                        target.scrollIntoView({
-                            behavior:
-                                "smooth",
-                            block:
-                                "center"
-                        });
-
-                    }
-
-                };
-
-
-            history.appendChild(
+            historyElement.appendChild(
                 item
             );
 
@@ -1314,10 +1351,28 @@ function renderHistory(){
 
 
 /* =====================================================
-   ATTACHMENT
+   SCROLL
 ===================================================== */
 
-attachBtn.onclick =
+function scrollBottom(){
+
+    requestAnimationFrame(
+        () => {
+
+            chat.scrollTop =
+                chat.scrollHeight;
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   FILE
+===================================================== */
+
+attachButton.onclick =
     () => {
 
         fileInput.click();
@@ -1334,71 +1389,7 @@ fileInput.onchange =
 
         if(!file){
 
-            selectedFile =
-                null;
-
-            attachment.style.display =
-                "none";
-
-            return;
-
-        }
-
-
-        const isImage =
-            file.type.startsWith(
-                "image/"
-            );
-
-        const isVideo =
-            file.type.startsWith(
-                "video/"
-            );
-
-
-        if(
-            !isImage &&
-            !isVideo
-        ){
-
-            alert(
-                "فقط عکس یا ویدئو قابل انتخاب است."
-            );
-
-            fileInput.value =
-                "";
-
-            selectedFile =
-                null;
-
-            return;
-
-        }
-
-
-        const max =
-            isImage
-                ? MAX_IMAGE_MB
-                : MAX_VIDEO_MB;
-
-
-        if(
-            file.size >
-            max * 1024 * 1024
-        ){
-
-            alert(
-                `حجم فایل بیشتر از ${max}MB است.`
-            );
-
-            fileInput.value =
-                "";
-
-            selectedFile =
-                null;
-
-            attachment.style.display =
-                "none";
+            clearFile();
 
             return;
 
@@ -1409,587 +1400,55 @@ fileInput.onchange =
             file;
 
 
-        attachment.style.display =
-            "block";
+        filePreview.textContent =
+            `📎 ${file.name}`;
 
 
-        attachment.textContent =
-            `${isImage ? "🖼️" : "🎬"} ${file.name} — ${formatBytes(file.size)}`;
+        filePreview.classList.add(
+            "active"
+        );
 
     };
 
 
-function formatBytes(
-    bytes
-){
+function clearFile(){
 
-    if(bytes < 1024){
+    selectedFile =
+        null;
 
-        return (
-            bytes +
-            " B"
-        );
+    fileInput.value =
+        "";
 
-    }
+    filePreview.textContent =
+        "";
 
-
-    if(
-        bytes <
-        1024 * 1024
-    ){
-
-        return (
-            bytes / 1024
-        ).toFixed(1) +
-        " KB";
-
-    }
-
-
-    return (
-        bytes /
-        1024 /
-        1024
-    ).toFixed(1) +
-    " MB";
-
-}
-
-
-/* =====================================================
-   READ FILE
-===================================================== */
-
-function readFile(
-    file
-){
-
-    return new Promise(
-        (
-            resolve,
-            reject
-        ) => {
-
-            const reader =
-                new FileReader();
-
-
-            reader.onload =
-                () => {
-
-                    resolve(
-                        reader.result
-                    );
-
-                };
-
-
-            reader.onerror =
-                () => {
-
-                    reject(
-                        new Error(
-                            "خواندن فایل انجام نشد."
-                        )
-                    );
-
-                };
-
-
-            reader.readAsDataURL(
-                file
-            );
-
-        }
+    filePreview.classList.remove(
+        "active"
     );
 
 }
 
 
 /* =====================================================
-   BUILD API MESSAGES
+   TEXTAREA
 ===================================================== */
 
-function buildApiMessages(
-    currentMessage
-){
-
-    const result = [];
-
-
-    /*
-        اطلاعات سازنده را در ابتدای
-        conversation قرار می‌دهیم.
-    */
-
-    result.push({
-
-        role:"user",
-
-        content:
-            CREATOR_INFO
-
-    });
-
-
-    messages
-    .slice(-MAX_HISTORY)
-    .forEach(
-        (
-            message,
-            index,
-            array
-        ) => {
-
-            const isCurrent =
-                message === currentMessage &&
-                index === array.length - 1;
-
-
-            if(isCurrent){
-
-                result.push({
-
-                    role:
-                        message.role,
-
-                    content:
-                        message.content
-
-                });
-
-            }else{
-
-                result.push({
-
-                    role:
-                        message.role,
-
-                    content:
-                        extractText(
-                            message.content
-                        )
-
-                });
-
-            }
-
-        }
-    );
-
-
-    return result;
-
-}
-
-
-/* =====================================================
-   ASK AI
-===================================================== */
-
-async function askAI(
-    apiMessages
-){
-
-    let response;
-
-
-    try{
-
-        response =
-            await fetch(
-                `${API}/api/chat`,
-                {
-                    method:"POST",
-
-                    headers:{
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body:
-                        JSON.stringify({
-                            messages:
-                                apiMessages
-                        })
-                }
-            );
-
-    }catch(error){
-
-        throw new Error(
-            "ارتباط با سرور برقرار نشد."
-        );
-
-    }
-
-
-    const text =
-        await response.text();
-
-
-    let data;
-
-
-    try{
-
-        data =
-            JSON.parse(
-                text
-            );
-
-    }catch(error){
-
-        throw new Error(
-            `سرور پاسخ نامعتبر داد. HTTP ${response.status}`
-        );
-
-    }
-
-
-    if(
-        !response.ok ||
-        data.success === false
-    ){
-
-        throw new Error(
-            data.error ||
-            `خطای سرور HTTP ${response.status}`
-        );
-
-    }
-
-
-    return data;
-
-}
-
-
-/* =====================================================
-   SEND
-===================================================== */
-
-async function sendMessage(){
-
-    if(sending){
-
-        return;
-
-    }
-
-
-    const text =
-        input.value.trim();
-
-
-    if(
-        !text &&
-        !selectedFile
-    ){
-
-        return;
-
-    }
-
-
-    sending = true;
-
-    sendBtn.disabled =
-        true;
-
-
-    setStatus(
-        "در حال فکر کردن..."
-    );
-
-
-    try{
-
-        let content;
-
-
-        /* =========================
-           TEXT
-        ========================= */
-
-        if(
-            !selectedFile
-        ){
-
-            content =
-                text;
-
-        }
-
-
-        /* =========================
-           IMAGE
-        ========================= */
-
-        else if(
-            selectedFile.type
-            .startsWith(
-                "image/"
-            )
-        ){
-
-            const dataURL =
-                await readFile(
-                    selectedFile
-                );
-
-
-            content = [
-
-                {
-                    type:"text",
-
-                    text:
-                        text ||
-                        "این تصویر را بررسی کن و توضیح بده."
-                },
-
-                {
-                    type:"image_url",
-
-                    image_url:{
-                        url:
-                            dataURL
-                    }
-                }
-
-            ];
-
-        }
-
-
-        /* =========================
-           VIDEO
-        ========================= */
-
-        else if(
-            selectedFile.type
-            .startsWith(
-                "video/"
-            )
-        ){
-
-            /*
-                فعلاً فایل ویدئو را
-                به عنوان attachment
-                معرفی می‌کنیم تا
-                درخواست خراب نشود.
-            */
-
-            content =
-                text
-                ? `${text}\n\n[ویدئو پیوست شد: ${selectedFile.name}]`
-                : `ویدئو پیوست شد: ${selectedFile.name}`;
-
-        }
-
-
-        else{
-
-            throw new Error(
-                "فرمت فایل پشتیبانی نمی‌شود."
-            );
-
-        }
-
-
-        /* =========================
-           CREATE USER MESSAGE
-        ========================= */
-
-        const userMessage = {
-
-            role:"user",
-
-            content:
-                content
-
-        };
-
-
-        /*
-            اول پیام را به آرایه اضافه می‌کنیم.
-        */
-
-        messages.push(
-            userMessage
-        );
-
-
-        /*
-            خیلی مهم:
-            همین الان DOM را آپدیت می‌کنیم.
-            دیگر لازم نیست رفرش کنی.
-        */
-
-        render();
-
-
-        /*
-            بعد از نمایش پیام،
-            ورودی را خالی می‌کنیم.
-        */
-
-        input.value =
-            "";
+input.addEventListener(
+    "input",
+    () => {
 
         input.style.height =
             "auto";
 
 
-        selectedFile =
-            null;
-
-        fileInput.value =
-            "";
-
-        attachment.style.display =
-            "none";
-
-
-        /*
-            پیام فعلی را برای API می‌سازیم.
-        */
-
-        const apiMessages =
-            buildApiMessages(
-                userMessage
-            );
-
-
-        /*
-            درخواست AI
-        */
-
-        const data =
-            await askAI(
-                apiMessages
-            );
-
-
-        /*
-            پاسخ AI
-        */
-
-        messages.push({
-
-            role:
-                "assistant",
-
-            content:
-                data.reply
-
-        });
-
-
-        save();
-
-
-        render();
-
-
-        setStatus(
-            "آماده"
-        );
-
-    }catch(error){
-
-        console.error(
-            "SEND ERROR:",
-            error
-        );
-
-
-        /*
-            حتی اگر API خراب شود،
-            پیام کاربر حذف نمی‌شود.
-        */
-
-        messages.push({
-
-            role:
-                "assistant",
-
-            content:
-                `❌ ${error.message}`
-
-        });
-
-
-        save();
-
-        render();
-
-
-        setStatus(
-            "خطا"
-        );
-
-    }finally{
-
-        sending =
-            false;
-
-        sendBtn.disabled =
-            false;
+        input.style.height =
+            Math.min(
+                input.scrollHeight,
+                180
+            ) + "px";
 
     }
-
-}
-
-
-/* =====================================================
-   NEW CHAT
-===================================================== */
-
-function newChat(){
-
-    messages =
-        [];
-
-    selectedFile =
-        null;
-
-    input.value =
-        "";
-
-    fileInput.value =
-        "";
-
-    attachment.style.display =
-        "none";
-
-
-    localStorage.removeItem(
-        STORAGE_KEY
-    );
-
-
-    setStatus(
-        "آماده"
-    );
-
-
-    render();
-
-}
-
-
-/* =====================================================
-   EVENTS
-===================================================== */
-
-newChatBtn.onclick =
-    newChat;
-
-
-sendBtn.onclick =
-    sendMessage;
+);
 
 
 input.addEventListener(
@@ -2012,34 +1471,750 @@ input.addEventListener(
 
 
 /* =====================================================
-   AUTO RESIZE
+   FILE TO DATA URL
 ===================================================== */
 
-input.addEventListener(
-    "input",
-    () => {
+function fileToDataURL(
+    file
+){
 
-        input.style.height =
-            "auto";
+    return new Promise(
+        (resolve, reject) => {
 
-        input.style.height =
-            Math.min(
-                input.scrollHeight,
-                180
-            ) +
-            "px";
+            const reader =
+                new FileReader();
+
+
+            reader.onload =
+                () => resolve(
+                    reader.result
+                );
+
+
+            reader.onerror =
+                reject;
+
+
+            reader.readAsDataURL(
+                file
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   SEARCH STATUS
+===================================================== */
+
+function createSearchStatus(
+    parent
+){
+
+    const status =
+        document.createElement(
+            "div"
+        );
+
+
+    status.className =
+        "search-status active";
+
+
+    status.innerHTML = `
+
+        <span class="search-icon">
+            🔎
+        </span>
+
+        <span>
+            در حال جستجو در وب...
+        </span>
+
+    `;
+
+
+    parent.appendChild(
+        status
+    );
+
+
+    return status;
+
+}
+
+
+/* =====================================================
+   SEND
+===================================================== */
+
+sendButton.onclick =
+    sendMessage;
+
+
+async function sendMessage(){
+
+    if(isSending){
+
+        return;
 
     }
-);
+
+
+    const text =
+        input.value.trim();
+
+
+    if(
+        !text &&
+        !selectedFile
+    ){
+
+        return;
+
+    }
+
+
+    isSending =
+        true;
+
+
+    sendButton.disabled =
+        true;
+
+
+    if(welcome){
+
+        welcome.style.display =
+            "none";
+
+    }
+
+
+    let userContent =
+        text;
+
+
+    /* ============================================
+       IMAGE
+    ============================================ */
+
+    if(
+        selectedFile &&
+        selectedFile.type.startsWith(
+            "image/"
+        )
+    ){
+
+        try{
+
+            const dataURL =
+                await fileToDataURL(
+                    selectedFile
+                );
+
+
+            userContent = [
+
+                {
+                    type:"text",
+                    text:
+                        text ||
+                        "این تصویر را بررسی کن."
+                },
+
+                {
+                    type:"image_url",
+
+                    image_url:{
+                        url:dataURL
+                    }
+
+                }
+
+            ];
+
+        }catch(error){
+
+            console.error(
+                error
+            );
+
+        }
+
+    }
+
+
+    /* ============================================
+       VIDEO
+    ============================================ */
+
+    else if(
+        selectedFile &&
+        selectedFile.type.startsWith(
+            "video/"
+        )
+    ){
+
+        userContent = text
+            ? `${text}\n\n[ویدئو پیوست شد: ${selectedFile.name}]`
+            : `[ویدئو پیوست شد: ${selectedFile.name}]`;
+
+    }
+
+
+    /* ============================================
+       SAVE USER MESSAGE
+    ============================================ */
+
+    const userMessage = {
+
+        role:"user",
+
+        content:
+            typeof userContent === "string"
+                ? userContent
+                : text ||
+                  `📎 ${selectedFile.name}`
+
+    };
+
+
+    messages.push(
+        userMessage
+    );
+
+
+    /* ============================================
+       SHOW USER IMMEDIATELY
+    ============================================ */
+
+    renderMessage(
+        userMessage
+    );
+
+
+    scrollBottom();
+
+    renderHistory();
+
+
+    input.value =
+        "";
+
+    input.style.height =
+        "auto";
+
+
+    clearFile();
+
+
+    /* ============================================
+       THINKING MESSAGE
+    ============================================ */
+
+    const thinkingMessage = {
+
+        role:"assistant",
+
+        thinking:true
+
+    };
+
+
+    const thinkingUI =
+        renderMessage(
+            thinkingMessage
+        );
+
+
+    scrollBottom();
+
+
+    try{
+
+        /* ========================================
+           BUILD REQUEST HISTORY
+        ======================================== */
+
+        const apiMessages =
+            messages
+                .slice(-MAX_HISTORY)
+                .map(message => {
+
+                    return {
+                        role:message.role,
+                        content:message.content
+                    };
+
+                });
+
+
+        /* ========================================
+           STREAM REQUEST
+        ======================================== */
+
+        const response =
+            await fetch(
+                API_STREAM,
+                {
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:JSON.stringify({
+                        messages:
+                            apiMessages
+                    })
+                }
+            );
+
+
+        /* ========================================
+           NON-OK
+        ======================================== */
+
+        if(!response.ok){
+
+            let errorText =
+                await response.text();
+
+
+            try{
+
+                const json =
+                    JSON.parse(
+                        errorText
+                    );
+
+                errorText =
+                    json.error ||
+                    errorText;
+
+            }catch(error){
+
+                // plain text
+            }
+
+
+            throw new Error(
+                errorText ||
+                `سرور پاسخ نامعتبر داد. ${response.status} HTTP`
+            );
+
+        }
+
+
+        if(!response.body){
+
+            throw new Error(
+                "مرورگر Streaming را پشتیبانی نمی‌کند."
+            );
+
+        }
+
+
+        /* ========================================
+           REMOVE THINKING
+        ======================================== */
+
+        thinkingUI.row.remove();
+
+
+        /* ========================================
+           CREATE ASSISTANT MESSAGE
+        ======================================== */
+
+        const assistantMessage = {
+
+            role:"assistant",
+
+            content:""
+
+        };
+
+
+        const assistantUI =
+            renderMessage(
+                assistantMessage
+            );
+
+
+        const contentElement =
+            assistantUI.content;
+
+
+        /* ========================================
+           SEARCH STATUS
+        ======================================== */
+
+        let searchStatus =
+            null;
+
+
+        /* ========================================
+           READER
+        ======================================== */
+
+        const reader =
+            response.body.getReader();
+
+
+        const decoder =
+            new TextDecoder(
+                "utf-8"
+            );
+
+
+        let buffer =
+            "";
+
+
+        let fullAnswer =
+            "";
+
+
+        /* ========================================
+           READ STREAM
+        ======================================== */
+
+        while(true){
+
+            const {
+                value,
+                done
+            } =
+                await reader.read();
+
+
+            if(done){
+
+                break;
+
+            }
+
+
+            buffer +=
+                decoder.decode(
+                    value,
+                    {
+                        stream:true
+                    }
+                );
+
+
+            const events =
+                buffer.split(
+                    "\n\n"
+                );
+
+
+            buffer =
+                events.pop() || "";
+
+
+            for(
+                const event
+                of events
+            ){
+
+                const lines =
+                    event.split(
+                        "\n"
+                    );
+
+
+                for(
+                    const line
+                    of lines
+                ){
+
+                    if(
+                        !line.startsWith(
+                            "data:"
+                        )
+                    ){
+
+                        continue;
+
+                    }
+
+
+                    const raw =
+                        line
+                            .slice(5)
+                            .trim();
+
+
+                    if(!raw){
+
+                        continue;
+
+                    }
+
+
+                    let data;
+
+
+                    try{
+
+                        data =
+                            JSON.parse(
+                                raw
+                            );
+
+                    }catch(error){
+
+                        continue;
+
+                    }
+
+
+                    /* =================================
+                       SEARCH
+                    ================================= */
+
+                    if(
+                        data.type ===
+                        "search"
+                    ){
+
+                        if(
+                            !searchStatus
+                        ){
+
+                            searchStatus =
+                                createSearchStatus(
+                                    contentElement
+                                );
+
+                        }
+
+
+                        const text =
+                            searchStatus.querySelector(
+                                "span:last-child"
+                            );
+
+
+                        let queryText =
+                            "در حال جستجو در وب...";
+
+
+                        if(
+                            data.arguments &&
+                            data.arguments.trim()
+                        ){
+
+                            try{
+
+                                const args =
+                                    JSON.parse(
+                                        data.arguments
+                                    );
+
+
+                                if(
+                                    args.query
+                                ){
+
+                                    queryText =
+                                        `در حال جستجو برای «${args.query}»...`;
+
+                                }
+
+                            }catch(error){
+
+                                // arguments may arrive in chunks
+                            }
+
+                        }
+
+
+                        text.textContent =
+                            queryText;
+
+                    }
+
+
+                    /* =================================
+                       CONTENT
+                    ================================= */
+
+                    if(
+                        data.type ===
+                        "content"
+                    ){
+
+                        fullAnswer +=
+                            data.text;
+
+
+                        assistantMessage.content =
+                            fullAnswer;
+
+
+                        if(
+                            searchStatus
+                        ){
+
+                            searchStatus.remove();
+
+                            searchStatus =
+                                null;
+
+                        }
+
+
+                        contentElement.innerHTML =
+                            renderMarkdown(
+                                fullAnswer
+                            );
+
+
+                        addCopyButtons(
+                            contentElement
+                        );
+
+
+                        scrollBottom();
+
+                    }
+
+
+                    /* =================================
+                       ERROR
+                    ================================= */
+
+                    if(
+                        data.type ===
+                        "error"
+                    ){
+
+                        throw new Error(
+                            data.message ||
+                            "خطای Streaming"
+                        );
+
+                    }
+
+                }
+
+            }
+
+        }
+
+
+        /* ========================================
+           FINAL SAVE
+        ======================================== */
+
+        if(!fullAnswer.trim()){
+
+            fullAnswer =
+                "مدل پاسخ متنی برنگرداند.";
+
+            assistantMessage.content =
+                fullAnswer;
+
+            contentElement.textContent =
+                fullAnswer;
+
+        }
+
+
+        messages.push({
+            role:"assistant",
+            content:fullAnswer
+        });
+
+
+        /* حذف نسخه اولیه‌ای که قبل از Stream داشتیم */
+        const index =
+            messages.indexOf(
+                assistantMessage
+            );
+
+
+        if(index !== -1){
+
+            messages.splice(
+                index,
+                1
+            );
+
+        }
+
+
+        save();
+
+        renderHistory();
+
+        scrollBottom();
+
+
+    }catch(error){
+
+        console.error(
+            "BEHRAD AI STREAM ERROR:",
+            error
+        );
+
+
+        thinkingUI.row.remove();
+
+
+        const errorMessage = {
+
+            role:"assistant",
+
+            content:
+                "❌ " +
+                (
+                    error.message ||
+                    "خطای ناشناخته"
+                )
+
+        };
+
+
+        renderMessage(
+            errorMessage
+        );
+
+
+        scrollBottom();
+
+    }finally{
+
+        isSending =
+            false;
+
+
+        sendButton.disabled =
+            false;
+
+
+        input.focus();
+
+    }
+
+}
 
 
 /* =====================================================
    START
 ===================================================== */
 
-render();
+input.focus();
 
 </script>
 
 </body>
+
 </html>
