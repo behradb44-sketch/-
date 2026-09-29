@@ -1,14 +1,9 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
-
 <head>
-
 <meta charset="UTF-8">
-
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
->
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
 <title>BEHRAD AI</title>
 
@@ -17,913 +12,740 @@
 
 <style>
 
-* {
-    box-sizing: border-box;
+*{
+    box-sizing:border-box;
 }
 
 html,
-body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    background: #212121;
-    color: #ececec;
-    font-family: Tahoma, Arial, sans-serif;
+body{
+    width:100%;
+    height:100%;
+    margin:0;
+    overflow:hidden;
 }
 
-body {
-    overflow: hidden;
+body{
+    background:#212121;
+    color:#ececec;
+    font-family:
+        Tahoma,
+        Arial,
+        sans-serif;
 }
 
-button,
-textarea,
-input {
-    font-family: inherit;
+/* =====================================================
+   APP
+===================================================== */
+
+.app{
+    width:100%;
+    height:100dvh;
+
+    display:flex;
+    flex-direction:column;
+
+    background:#212121;
 }
 
-.app {
-    width: 100%;
-    height: 100dvh;
-    min-height: 0;
-    display: flex;
-    background: #212121;
+/* =====================================================
+   HEADER
+===================================================== */
+
+.header{
+    height:58px;
+    min-height:58px;
+
+    display:flex;
+    align-items:center;
+
+    padding:0 18px;
+
+    border-bottom:1px solid #333;
+
+    background:#212121;
 }
 
-.sidebar {
-    width: 260px;
-    flex: 0 0 260px;
-    height: 100%;
-    background: #171717;
-    border-left: 1px solid #303030;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
+.brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+
+    font-size:16px;
+    font-weight:bold;
 }
 
-.brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px;
-    margin-bottom: 8px;
+.logo{
+    width:34px;
+    height:34px;
+
+    border-radius:10px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    background:#111;
+    border:1px solid #444;
+
+    font-size:18px;
 }
 
-.logo {
-    width: 35px;
-    height: 35px;
-    border-radius: 10px;
-    background: #10a37f;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: bold;
+.model{
+    margin-right:auto;
+
+    font-size:12px;
+    color:#9b9b9b;
 }
 
-.brand-name {
-    font-weight: bold;
-    font-size: 16px;
+/* =====================================================
+   CHAT
+===================================================== */
+
+.chat{
+    flex:1;
+
+    min-height:0;
+
+    overflow-y:auto;
+    overflow-x:hidden;
+
+    scroll-behavior:auto;
+
+    padding:28px 14px 18px;
 }
 
-.new-chat {
-    width: 100%;
-    padding: 12px;
-    border-radius: 9px;
-    border: 1px solid #3d3d3d;
-    background: #212121;
-    color: white;
-    cursor: pointer;
-    text-align: right;
+.chat-inner{
+    width:100%;
+    max-width:820px;
+
+    margin:auto;
 }
 
-.new-chat:hover {
-    background: #292929;
+/* =====================================================
+   MESSAGE
+===================================================== */
+
+.message{
+    display:flex;
+
+    margin:0 auto 25px;
+
+    width:100%;
 }
 
-.history-title {
-    color: #777;
-    font-size: 11px;
-    margin: 22px 8px 8px;
+.message.user{
+    justify-content:flex-start;
 }
 
-.history {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
+.message.assistant{
+    justify-content:flex-start;
 }
 
-.history-item {
-    padding: 9px;
-    border-radius: 7px;
-    color: #aaa;
-    font-size: 12px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.message-content{
+    max-width:82%;
+
+    line-height:1.85;
+
+    font-size:15px;
+
+    word-break:break-word;
 }
 
-.history-item:hover {
-    background: #242424;
-    color: white;
+.user .message-content{
+    background:#2f2f2f;
+
+    border:1px solid #414141;
+
+    padding:11px 15px;
+
+    border-radius:18px 18px 5px 18px;
 }
 
-.sidebar-bottom {
-    border-top: 1px solid #303030;
-    padding: 12px 7px 5px;
-    color: #666;
-    font-size: 10px;
-    line-height: 1.8;
+.assistant .message-content{
+    background:transparent;
+
+    padding:3px 0;
 }
 
-.main {
-    flex: 1;
-    min-width: 0;
-    min-height: 0;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+/* =====================================================
+   MARKDOWN
+===================================================== */
+
+.message-content p{
+    margin:0 0 12px;
 }
 
-.topbar {
-    height: 58px;
-    flex: 0 0 58px;
-    border-bottom: 1px solid #303030;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 0 22px;
-    background: #212121;
+.message-content p:last-child{
+    margin-bottom:0;
 }
 
-.model-name {
-    font-size: 14px;
-    font-weight: bold;
+.message-content ul,
+.message-content ol{
+    padding-right:25px;
 }
 
-.model-status {
-    color: #777;
-    font-size: 11px;
+.message-content pre{
+    direction:ltr;
+    text-align:left;
+
+    overflow:auto;
+
+    background:#111;
+    border:1px solid #333;
+
+    border-radius:10px;
+
+    padding:14px;
+
+    margin:14px 0;
 }
 
-.chat {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 25px 15px 25px;
+.message-content code{
+    font-family:
+        Consolas,
+        "Courier New",
+        monospace;
 }
 
-.chat-inner {
-    width: 100%;
-    max-width: 850px;
-    margin: 0 auto;
+.message-content :not(pre) > code{
+    background:#303030;
+
+    border-radius:5px;
+
+    padding:2px 5px;
+
+    direction:ltr;
 }
 
-.welcome {
-    min-height: 65vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    text-align: center;
+/* =====================================================
+   CODE COPY
+===================================================== */
+
+.code-wrap{
+    position:relative;
 }
 
-.welcome-logo {
-    width: 58px;
-    height: 58px;
-    border-radius: 17px;
-    background: #10a37f;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    margin-bottom: 18px;
+.copy-code{
+    position:absolute;
+
+    top:8px;
+    left:8px;
+
+    border:1px solid #444;
+
+    background:#222;
+    color:#ddd;
+
+    border-radius:7px;
+
+    padding:5px 9px;
+
+    font-size:11px;
+
+    cursor:pointer;
 }
 
-.welcome h1 {
-    font-size: 25px;
-    margin: 0 0 9px;
+.copy-code:hover{
+    background:#333;
 }
 
-.welcome p {
-    margin: 0;
-    color: #888;
-    font-size: 13px;
+/* =====================================================
+   THINKING
+===================================================== */
+
+.thinking{
+    display:flex;
+    align-items:center;
+    gap:7px;
+
+    height:28px;
 }
 
-.message {
-    display: flex;
-    gap: 13px;
-    margin-bottom: 30px;
-    animation: messageIn .16s ease;
+.wave{
+    display:flex;
+    align-items:center;
+    gap:3px;
 }
 
-@keyframes messageIn {
-    from {
-        opacity: 0;
-        transform: translateY(4px);
+.wave span{
+    width:3px;
+    height:8px;
+
+    background:#aaa;
+
+    border-radius:5px;
+
+    animation:wave 1s infinite ease-in-out;
+}
+
+.wave span:nth-child(2){
+    animation-delay:.1s;
+}
+
+.wave span:nth-child(3){
+    animation-delay:.2s;
+}
+
+.wave span:nth-child(4){
+    animation-delay:.3s;
+}
+
+.wave span:nth-child(5){
+    animation-delay:.4s;
+}
+
+@keyframes wave{
+
+    0%,
+    100%{
+        height:7px;
+        opacity:.4;
     }
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.avatar {
-    width: 32px;
-    height: 32px;
-    flex: 0 0 32px;
-    border-radius: 9px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    font-weight: bold;
-}
-
-.user .avatar {
-    background: #444;
-}
-
-.assistant .avatar {
-    background: #10a37f;
-}
-
-.message-body {
-    flex: 1;
-    min-width: 0;
-}
-
-.message-name {
-    color: #999;
-    font-size: 11px;
-    margin-bottom: 7px;
-}
-
-.message-content {
-    font-size: 14px;
-    line-height: 1.9;
-    overflow-wrap: anywhere;
-}
-
-.message-content p {
-    margin: 0 0 12px;
-}
-
-.message-content p:last-child {
-    margin-bottom: 0;
-}
-
-.message-content code:not(pre code) {
-    background: #2b2b2b;
-    border: 1px solid #3a3a3a;
-    border-radius: 5px;
-    padding: 2px 6px;
-    font-family: Consolas, monospace;
-}
-
-.code-wrap {
-    position: relative;
-    margin: 14px 0;
-}
-
-.code-wrap pre {
-    margin: 0;
-    padding: 17px;
-    border-radius: 10px;
-    background: #111;
-    border: 1px solid #303030;
-    overflow-x: auto;
-    direction: ltr;
-    text-align: left;
-}
-
-.code-wrap pre code {
-    font-family: Consolas, monospace;
-    font-size: 13px;
-    line-height: 1.7;
-}
-
-.copy-code {
-    position: absolute;
-    top: 7px;
-    left: 8px;
-    background: #222;
-    color: #bbb;
-    border: 1px solid #444;
-    border-radius: 6px;
-    padding: 5px 9px;
-    cursor: pointer;
-    font-size: 10px;
-}
-
-.copy-code:hover {
-    background: #333;
-    color: white;
-}
-
-.thinking {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    color: #888;
-    font-size: 11px;
-}
-
-.wave {
-    height: 18px;
-    display: flex;
-    align-items: center;
-    gap: 3px;
-}
-
-.wave span {
-    width: 3px;
-    height: 7px;
-    border-radius: 4px;
-    background: #10a37f;
-    animation: wave .75s infinite ease-in-out;
-}
-
-.wave span:nth-child(2) {
-    animation-delay: .1s;
-}
-
-.wave span:nth-child(3) {
-    animation-delay: .2s;
-}
-
-.wave span:nth-child(4) {
-    animation-delay: .3s;
-}
-
-.wave span:nth-child(5) {
-    animation-delay: .4s;
-}
-
-@keyframes wave {
-    0%,100% {
-        height: 6px;
-    }
-
-    50% {
-        height: 17px;
+    50%{
+        height:17px;
+        opacity:1;
     }
 }
 
-/* ================================
-   INPUT
-================================ */
+.thinking-text{
+    font-size:12px;
+    color:#8c8c8c;
+}
 
-.input-area {
-    flex: 0 0 auto;
-    width: 100%;
+/* =====================================================
+   INPUT AREA
+===================================================== */
+
+.input-area{
+    flex:none;
+
+    width:100%;
+
     padding:
         10px
-        max(10px, env(safe-area-inset-right))
-        calc(12px + env(safe-area-inset-bottom))
-        max(10px, env(safe-area-inset-left));
-    background: #212121;
+        14px
+        calc(10px + env(safe-area-inset-bottom));
+
+    background:#212121;
 }
 
-.input-box {
-    width: 100%;
-    max-width: 850px;
-    margin: 0 auto;
-    min-height: 54px;
-    display: flex;
-    align-items: flex-end;
-    gap: 3px;
-    padding: 7px;
-    background: #2f2f2f;
-    border: 1px solid #454545;
-    border-radius: 15px;
+.input-box{
+    width:100%;
+    max-width:820px;
+
+    margin:auto;
+
+    display:flex;
+    align-items:flex-end;
+    gap:8px;
+
+    background:#2f2f2f;
+
+    border:1px solid #454545;
+
+    border-radius:18px;
+
+    padding:8px;
+
+    box-shadow:
+        0 4px 20px rgba(0,0,0,.18);
 }
 
-textarea {
-    flex: 1;
-    min-width: 0;
-    min-height: 40px;
-    max-height: 150px;
-    resize: none;
-    border: 0;
-    outline: 0;
-    background: transparent;
-    color: white;
-    padding: 8px 9px;
-    line-height: 1.65;
-    font-size: 14px;
+textarea{
+    flex:1;
+
+    min-width:0;
+
+    height:42px;
+    max-height:180px;
+
+    resize:none;
+
+    border:0;
+    outline:0;
+
+    background:transparent;
+
+    color:#eee;
+
+    font-family:inherit;
+    font-size:14px;
+
+    line-height:1.7;
+
+    padding:8px 9px;
 }
 
-textarea::placeholder {
-    color: #777;
+textarea::placeholder{
+    color:#888;
 }
 
-.attach,
-.send {
-    flex: 0 0 39px;
-    width: 39px;
-    height: 39px;
-    border-radius: 10px;
-    border: 0;
-    cursor: pointer;
+.button{
+    width:40px;
+    height:40px;
+
+    flex:none;
+
+    border:0;
+
+    border-radius:12px;
+
+    background:#ececec;
+    color:#171717;
+
+    cursor:pointer;
+
+    font-size:17px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
 }
 
-.attach {
-    background: transparent;
-    color: #aaa;
-    font-size: 18px;
+.button:hover{
+    background:#fff;
 }
 
-.attach:hover {
-    background: #3a3a3a;
-    color: white;
+.button:disabled{
+    opacity:.45;
+    cursor:not-allowed;
 }
 
-.send {
-    background: #10a37f;
-    color: white;
-    font-size: 17px;
+/* =====================================================
+   ATTACH
+===================================================== */
+
+.attach{
+    position:relative;
 }
 
-.send:disabled {
-    opacity: .45;
-    cursor: not-allowed;
+.attach input{
+    position:absolute;
+
+    width:1px;
+    height:1px;
+
+    opacity:0;
 }
 
-.file-preview {
-    width: 100%;
-    max-width: 850px;
-    margin: 0 auto 7px;
-    padding: 7px 10px;
-    border: 1px solid #3d3d3d;
-    border-radius: 8px;
-    background: #2a2a2a;
-    color: #aaa;
-    display: none;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 11px;
+.attach-button{
+    width:40px;
+    height:40px;
+
+    border-radius:12px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    cursor:pointer;
+
+    color:#bbb;
 }
 
-.remove-file {
-    border: 0;
-    background: transparent;
-    color: #888;
-    cursor: pointer;
-    font-size: 17px;
+.attach-button:hover{
+    background:#3a3a3a;
 }
 
-.attached-image {
-    max-width: min(420px, 100%);
-    max-height: 320px;
-    margin-top: 10px;
-    border-radius: 10px;
-    border: 1px solid #444;
+/* =====================================================
+   ATTACHMENT PREVIEW
+===================================================== */
+
+.preview{
+    width:100%;
+    max-width:820px;
+
+    margin:0 auto 7px;
+
+    display:none;
+
+    background:#2a2a2a;
+
+    border:1px solid #3d3d3d;
+
+    border-radius:12px;
+
+    padding:9px;
+
+    font-size:12px;
+    color:#bbb;
 }
 
-@media (max-width: 760px) {
+/* =====================================================
+   MOBILE
+===================================================== */
 
-    .sidebar {
-        display: none;
+@media(max-width:600px){
+
+    .header{
+        padding:0 12px;
     }
 
-    .topbar {
-        height: 52px;
-        flex-basis: 52px;
-        padding: 0 14px;
+    .model{
+        display:none;
     }
 
-    .chat {
-        padding:
-            18px 10px 18px;
+    .chat{
+        padding:20px 10px 12px;
     }
 
-    .chat-inner {
-        max-width: 100%;
+    .message-content{
+        max-width:90%;
+        font-size:14px;
     }
 
-    .message {
-        gap: 9px;
-        margin-bottom: 25px;
+    .input-area{
+        padding-left:8px;
+        padding-right:8px;
     }
 
-    .avatar {
-        width: 29px;
-        height: 29px;
-        flex-basis: 29px;
+    .input-box{
+        border-radius:16px;
     }
 
-    .message-content {
-        font-size: 13px;
-    }
-
-    .welcome h1 {
-        font-size: 20px;
-    }
-
-    .input-area {
-        padding:
-            7px
-            8px
-            calc(8px + env(safe-area-inset-bottom))
-            8px;
-    }
-
-    .input-box {
-        min-height: 52px;
-        border-radius: 14px;
-    }
-
-    textarea {
-        font-size: 13px;
-    }
-
-    .attach,
-    .send {
-        width: 37px;
-        height: 37px;
-        flex-basis: 37px;
+    textarea{
+        font-size:14px;
     }
 }
 
 </style>
-
 </head>
 
 <body>
 
 <div class="app">
 
-    <aside class="sidebar">
+    <header class="header">
 
         <div class="brand">
 
             <div class="logo">
-                BA
+                ✦
             </div>
 
-            <div class="brand-name">
-                BEHRAD AI
-            </div>
-
-        </div>
-
-        <button
-            class="new-chat"
-            id="newChat"
-        >
-            ＋ چت جدید
-        </button>
-
-        <div class="history-title">
-            تاریخچه
-        </div>
-
-        <div
-            class="history"
-            id="history"
-        ></div>
-
-        <div class="sidebar-bottom">
-            BEHRAD AI
-            <br>
-            ساخته‌شده توسط بهراد محمدی
-            <br>
-            BEHRAD M PLAYER
-        </div>
-
-    </aside>
-
-
-    <main class="main">
-
-        <div class="topbar">
-
-            <span class="model-name">
+            <span>
                 BEHRAD AI
             </span>
 
-            <span class="model-status">
-                Space Bunny Alpha
-            </span>
-
         </div>
 
-
-        <div
-            class="chat"
-            id="chat"
-        >
-
-            <div
-                class="chat-inner"
-                id="chatInner"
-            >
-
-                <div
-                    class="welcome"
-                    id="welcome"
-                >
-
-                    <div class="welcome-logo">
-                        BA
-                    </div>
-
-                    <h1>
-                        چه کاری می‌تونم برات انجام بدم؟
-                    </h1>
-
-                    <p>
-                        BEHRAD AI آماده‌ست 🚀
-                    </p>
-
-                </div>
-
-            </div>
-
+        <div class="model">
+            Space Bunny Alpha
         </div>
 
+    </header>
 
-        <div class="input-area">
 
-            <div
-                class="file-preview"
-                id="filePreview"
-            >
+    <main class="chat" id="chat">
 
-                <span id="fileName"></span>
+        <div class="chat-inner" id="chatInner"></div>
 
-                <button
-                    class="remove-file"
-                    id="removeFile"
-                >
-                    ×
-                </button>
+    </main>
 
-            </div>
 
-            <div class="input-box">
+    <div class="input-area">
+
+        <div class="preview" id="preview"></div>
+
+        <div class="input-box">
+
+            <label class="attach">
 
                 <input
                     type="file"
                     id="fileInput"
                     accept="image/*,video/*"
-                    hidden
                 >
 
-                <button
-                    class="attach"
-                    id="attachButton"
-                >
+                <span class="attach-button">
                     ＋
-                </button>
+                </span>
 
-                <textarea
-                    id="messageInput"
-                    rows="1"
-                    placeholder="پیامت رو بنویس..."
-                ></textarea>
+            </label>
 
-                <button
-                    class="send"
-                    id="sendButton"
-                >
-                    ↑
-                </button>
+            <textarea
+                id="messageInput"
+                placeholder="پیامت رو بنویس..."
+                rows="1"
+            ></textarea>
 
-            </div>
+            <button
+                class="button"
+                id="sendButton"
+                title="ارسال"
+            >
+                ↑
+            </button>
 
         </div>
 
-    </main>
+    </div>
 
 </div>
 
 
 <script>
 
-const API_URL = "/api/chat";
+/* =====================================================
+   CONFIG
+===================================================== */
 
-const STORAGE_KEY =
-    "behrad_ai_stable_v3";
+const STORAGE_KEY = "behrad_ai_fast_v4";
 
-const MAX_HISTORY = 12;
+const chat = document.getElementById("chat");
+const chatInner = document.getElementById("chatInner");
+
+const input = document.getElementById("messageInput");
+const sendButton = document.getElementById("sendButton");
+
+const fileInput = document.getElementById("fileInput");
+const preview = document.getElementById("preview");
+
 
 let messages = [];
-
 let selectedFile = null;
-
-let selectedImageData = null;
-
-let generating = false;
+let waiting = false;
 
 
-const chat =
-    document.getElementById("chat");
+/* =====================================================
+   STORAGE
+===================================================== */
 
-const chatInner =
-    document.getElementById("chatInner");
+function save(){
 
-const welcome =
-    document.getElementById("welcome");
-
-const input =
-    document.getElementById("messageInput");
-
-const sendButton =
-    document.getElementById("sendButton");
-
-const attachButton =
-    document.getElementById("attachButton");
-
-const fileInput =
-    document.getElementById("fileInput");
-
-const filePreview =
-    document.getElementById("filePreview");
-
-const fileName =
-    document.getElementById("fileName");
-
-const removeFile =
-    document.getElementById("removeFile");
-
-const historyElement =
-    document.getElementById("history");
-
-const newChat =
-    document.getElementById("newChat");
-
-
-function isNearBottom() {
-
-    return (
-        chat.scrollHeight -
-        chat.scrollTop -
-        chat.clientHeight
-    ) < 120;
-
-}
-
-
-function scrollBottom(force = false) {
-
-    if (
-        force ||
-        isNearBottom()
-    ) {
-
-        chat.scrollTop =
-            chat.scrollHeight;
-
-    }
-
-}
-
-
-function saveHistory() {
-
-    try {
+    try{
 
         localStorage.setItem(
             STORAGE_KEY,
             JSON.stringify(
-                messages
-                    .slice(-MAX_HISTORY)
-                    .map(m => ({
-                        role: m.role,
-                        content:
-                            typeof m.content === "string"
-                                ? m.content
-                                : ""
-                    }))
+                messages.map(m => ({
+                    role:m.role,
+                    content:m.content
+                }))
             )
         );
 
-    } catch (e) {
+    }catch(e){
 
-        console.error(e);
+        console.warn(
+            "Storage error:",
+            e
+        );
 
     }
-
 }
 
 
-function loadHistory() {
+function load(){
 
-    try {
+    try{
 
         const raw =
             localStorage.getItem(
                 STORAGE_KEY
             );
 
-        if (!raw) {
+        if(!raw){
             return;
         }
 
         const data =
             JSON.parse(raw);
 
-        if (
-            Array.isArray(data)
-        ) {
-
-            messages =
-                data;
-
-            renderAll();
-
+        if(!Array.isArray(data)){
+            return;
         }
 
-    } catch (e) {
+        messages = data.slice(-10);
 
-        console.error(
-            "History:",
+        renderAll();
+
+    }catch(e){
+
+        console.warn(
+            "Load history error:",
             e
         );
 
-        messages = [];
-
     }
-
 }
 
 
-function renderMarkdown(text) {
+/* =====================================================
+   ESCAPE
+===================================================== */
 
-    try {
+function escapeHtml(text){
 
-        return DOMPurify.sanitize(
+    const div =
+        document.createElement("div");
+
+    div.textContent =
+        String(text);
+
+    return div.innerHTML;
+}
+
+
+/* =====================================================
+   MARKDOWN
+===================================================== */
+
+function renderMarkdown(text){
+
+    try{
+
+        const html =
             marked.parse(
                 text || ""
-            )
+            );
+
+        return DOMPurify.sanitize(
+            html
         );
 
-    } catch {
+    }catch{
 
         return escapeHtml(
             text || ""
         );
 
     }
-
 }
 
 
-function escapeHtml(text) {
+/* =====================================================
+   CODE COPY
+===================================================== */
 
-    const div =
-        document.createElement(
-            "div"
-        );
-
-    div.textContent =
-        text;
-
-    return div.innerHTML;
-
-}
-
-
-function setupCodeButtons(container) {
+function addCopyButtons(container){
 
     container
         .querySelectorAll("pre")
         .forEach(pre => {
 
-            if (
-                pre.parentElement.classList.contains(
-                    "code-wrap"
-                )
-            ) {
+            if(pre.parentElement.classList.contains("code-wrap")){
                 return;
             }
 
-            const wrap =
-                document.createElement(
-                    "div"
-                );
+            const wrapper =
+                document.createElement("div");
 
-            wrap.className =
+            wrapper.className =
                 "code-wrap";
 
             pre.parentNode.insertBefore(
-                wrap,
+                wrapper,
                 pre
             );
 
-            wrap.appendChild(
+            wrapper.appendChild(
                 pre
             );
 
             const button =
-                document.createElement(
-                    "button"
-                );
+                document.createElement("button");
 
             button.className =
                 "copy-code";
@@ -931,38 +753,37 @@ function setupCodeButtons(container) {
             button.textContent =
                 "کپی";
 
-            button.onclick =
-                async () => {
+            button.onclick = async () => {
 
-                    try {
+                const code =
+                    pre.innerText;
 
-                        await navigator
-                            .clipboard
-                            .writeText(
-                                pre.innerText
-                            );
+                try{
 
-                        button.textContent =
-                            "کپی شد ✓";
+                    await navigator.clipboard.writeText(
+                        code
+                    );
 
-                        setTimeout(
-                            () => {
-                                button.textContent =
-                                    "کپی";
-                            },
-                            1200
-                        );
+                    button.textContent =
+                        "کپی شد ✓";
 
-                    } catch {
+                    setTimeout(() => {
 
                         button.textContent =
-                            "خطا";
+                            "کپی";
 
-                    }
+                    },1200);
 
-                };
+                }catch{
 
-            wrap.appendChild(
+                    button.textContent =
+                        "خطا";
+
+                }
+
+            };
+
+            wrapper.appendChild(
                 button
             );
 
@@ -971,573 +792,460 @@ function setupCodeButtons(container) {
 }
 
 
-function createMessage(message) {
+/* =====================================================
+   RENDER
+===================================================== */
+
+function renderMessage(message){
 
     const row =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     row.className =
         `message ${message.role}`;
 
-    const avatar =
-        document.createElement(
-            "div"
-        );
-
-    avatar.className =
-        "avatar";
-
-    avatar.textContent =
-        message.role === "user"
-            ? "شما"
-            : "AI";
-
-    const body =
-        document.createElement(
-            "div"
-        );
-
-    body.className =
-        "message-body";
-
-    const name =
-        document.createElement(
-            "div"
-        );
-
-    name.className =
-        "message-name";
-
-    name.textContent =
-        message.role === "user"
-            ? "شما"
-            : "BEHRAD AI";
-
     const content =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     content.className =
         "message-content";
 
-    if (
-        message.role === "user"
-    ) {
-
-        content.textContent =
-            message.content || "";
-
-    } else {
+    if(message.role === "assistant"){
 
         content.innerHTML =
             renderMarkdown(
-                message.content || ""
+                message.content
             );
 
-        setupCodeButtons(
+        addCopyButtons(
             content
         );
 
+    }else{
+
+        content.textContent =
+            message.content;
+
     }
 
-    body.appendChild(name);
-    body.appendChild(content);
+    row.appendChild(
+        content
+    );
 
-    row.appendChild(avatar);
-    row.appendChild(body);
+    chatInner.appendChild(
+        row
+    );
 
     return row;
-
 }
 
 
-function renderAll() {
+function renderAll(){
 
     chatInner.innerHTML = "";
 
-    if (
-        messages.length === 0
-    ) {
+    for(const message of messages){
 
-        chatInner.appendChild(
-            welcome
+        renderMessage(
+            message
         );
-
-        return;
 
     }
 
-    messages.forEach(message => {
-
-        chatInner.appendChild(
-            createMessage(message)
-        );
-
-    });
-
-    renderHistory();
-
-    requestAnimationFrame(
-        () => scrollBottom(true)
-    );
-
+    scrollBottom();
 }
 
 
-function renderHistory() {
+/* =====================================================
+   SCROLL
+===================================================== */
 
-    historyElement.innerHTML = "";
+function isNearBottom(){
 
-    messages
-        .filter(
-            m => m.role === "user"
-        )
-        .slice(-10)
-        .forEach(message => {
+    const distance =
+        chat.scrollHeight -
+        chat.scrollTop -
+        chat.clientHeight;
 
-            const item =
-                document.createElement(
-                    "div"
-                );
-
-            item.className =
-                "history-item";
-
-            item.textContent =
-                String(
-                    message.content || ""
-                )
-                .replace(
-                    /\s+/g,
-                    " "
-                )
-                .slice(
-                    0,
-                    50
-                );
-
-            historyElement.appendChild(
-                item
-            );
-
-        });
-
+    return distance < 180;
 }
 
 
-function createThinking() {
+function scrollBottom(){
+
+    chat.scrollTop =
+        chat.scrollHeight;
+}
+
+
+/* =====================================================
+   THINKING
+===================================================== */
+
+function showThinking(){
 
     const row =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     row.className =
         "message assistant";
 
     row.id =
-        "thinking";
+        "thinkingRow";
 
-    const avatar =
-        document.createElement(
-            "div"
-        );
+    row.innerHTML = `
+        <div class="message-content">
 
-    avatar.className =
-        "avatar";
+            <div class="thinking">
 
-    avatar.textContent =
-        "AI";
+                <div class="wave">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
 
-    const body =
-        document.createElement(
-            "div"
-        );
+                <span class="thinking-text">
+                    در حال فکر کردن...
+                </span>
 
-    body.className =
-        "message-body";
+            </div>
 
-    const name =
-        document.createElement(
-            "div"
-        );
+        </div>
+    `;
 
-    name.className =
-        "message-name";
+    chatInner.appendChild(
+        row
+    );
 
-    name.textContent =
-        "BEHRAD AI";
+    if(isNearBottom()){
 
-    const thinking =
-        document.createElement(
-            "div"
-        );
-
-    thinking.className =
-        "thinking";
-
-    const wave =
-        document.createElement(
-            "div"
-        );
-
-    wave.className =
-        "wave";
-
-    for (
-        let i = 0;
-        i < 5;
-        i++
-    ) {
-
-        const span =
-            document.createElement(
-                "span"
-            );
-
-        wave.appendChild(
-            span
-        );
+        scrollBottom();
 
     }
-
-    const text =
-        document.createElement(
-            "span"
-        );
-
-    text.textContent =
-        "در حال فکر کردن و بررسی وب...";
-
-    thinking.appendChild(wave);
-    thinking.appendChild(text);
-
-    body.appendChild(name);
-    body.appendChild(thinking);
-
-    row.appendChild(avatar);
-    row.appendChild(body);
-
-    return row;
-
 }
 
 
-function smoothReveal(
+function hideThinking(){
+
+    const row =
+        document.getElementById(
+            "thinkingRow"
+        );
+
+    if(row){
+
+        row.remove();
+
+    }
+}
+
+
+/* =====================================================
+   SMOOTH ANSWER REVEAL
+===================================================== */
+
+async function smoothReveal(
     element,
-    text,
-    follow
-) {
+    text
+){
 
-    return new Promise(resolve => {
+    const wasNearBottom =
+        isNearBottom();
 
-        let index = 0;
+    let current = "";
 
-        const length =
-            text.length;
+    const chunkSize = 6;
 
-        function tick() {
+    for(
+        let i = 0;
+        i < text.length;
+        i += chunkSize
+    ){
 
-            if (
-                index >= length
-            ) {
-
-                element.innerHTML =
-                    renderMarkdown(
-                        text
-                    );
-
-                setupCodeButtons(
-                    element
-                );
-
-                resolve();
-
-                return;
-            }
-
-            let step = 5;
-
-            if (
-                length > 3000
-            ) {
-                step = 10;
-            } else if (
-                length > 1500
-            ) {
-                step = 7;
-            }
-
-            index =
-                Math.min(
-                    index + step,
-                    length
-                );
-
-            element.textContent =
-                text.slice(
-                    0,
-                    index
-                );
-
-            if (
-                follow &&
-                isNearBottom()
-            ) {
-
-                chat.scrollTop =
-                    chat.scrollHeight;
-
-            }
-
-            setTimeout(
-                tick,
-                6
+        current +=
+            text.slice(
+                i,
+                i + chunkSize
             );
+
+        element.innerHTML =
+            renderMarkdown(
+                current
+            );
+
+        addCopyButtons(
+            element
+        );
+
+        if(
+            wasNearBottom &&
+            isNearBottom()
+        ){
+
+            scrollBottom();
 
         }
 
-        tick();
-
-    });
-
+        await new Promise(
+            resolve =>
+                setTimeout(
+                    resolve,
+                    8
+                )
+        );
+    }
 }
 
 
-attachButton.onclick =
-    () => fileInput.click();
+/* =====================================================
+   FILE
+===================================================== */
 
-
-fileInput.onchange =
+fileInput.addEventListener(
+    "change",
     () => {
 
-        const file =
-            fileInput.files[0];
+        selectedFile =
+            fileInput.files[0] || null;
 
-        if (!file) {
+        if(!selectedFile){
+
+            preview.style.display =
+                "none";
+
+            preview.textContent =
+                "";
+
             return;
         }
 
-        selectedFile =
-            file;
+        preview.style.display =
+            "block";
 
-        fileName.textContent =
-            file.name;
+        preview.textContent =
+            `📎 ${selectedFile.name}`;
 
-        filePreview.style.display =
-            "flex";
+    }
+);
 
-        if (
-            file.type.startsWith(
-                "image/"
-            )
-        ) {
+
+/* =====================================================
+   IMAGE DATA
+===================================================== */
+
+function fileToDataURL(file){
+
+    return new Promise(
+        (resolve,reject) => {
 
             const reader =
                 new FileReader();
 
             reader.onload =
-                () => {
+                () => resolve(
+                    reader.result
+                );
 
-                    selectedImageData =
-                        reader.result;
-
-                };
+            reader.onerror =
+                reject;
 
             reader.readAsDataURL(
                 file
             );
 
-        } else {
-
-            selectedImageData =
-                null;
-
         }
-
-    };
-
-
-removeFile.onclick =
-    () => {
-
-        selectedFile = null;
-        selectedImageData = null;
-
-        fileInput.value = "";
-
-        filePreview.style.display =
-            "none";
-
-    };
+    );
+}
 
 
-async function sendMessage() {
+/* =====================================================
+   SEND
+===================================================== */
 
-    if (generating) {
+async function sendMessage(){
+
+    if(waiting){
         return;
     }
 
     const text =
         input.value.trim();
 
-    if (
-        !text &&
-        !selectedFile
-    ) {
+    if(!text && !selectedFile){
         return;
     }
 
-    const follow =
-        isNearBottom();
+    waiting = true;
 
-    generating = true;
+    sendButton.disabled =
+        true;
 
-    sendButton.disabled = true;
+    /* ---------------------------------------------
+       Prepare user message
+    --------------------------------------------- */
 
-    let displayText =
+    let visibleText =
         text;
 
-    if (selectedFile) {
+    let apiContent =
+        text;
 
-        if (displayText) {
-            displayText += "\n\n";
+    if(selectedFile){
+
+        if(
+            selectedFile.type.startsWith(
+                "image/"
+            )
+        ){
+
+            try{
+
+                const dataURL =
+                    await fileToDataURL(
+                        selectedFile
+                    );
+
+                visibleText =
+                    text
+                    ? `${text}\n📷 ${selectedFile.name}`
+                    : `📷 ${selectedFile.name}`;
+
+                apiContent = [
+
+                    {
+                        type:"text",
+                        text:
+                            text ||
+                            "این تصویر را بررسی کن."
+                    },
+
+                    {
+                        type:"image_url",
+                        image_url:{
+                            url:dataURL
+                        }
+                    }
+
+                ];
+
+            }catch{
+
+                visibleText =
+                    text ||
+                    `📷 ${selectedFile.name}`;
+
+                apiContent =
+                    text ||
+                    `تصویر پیوست شد: ${selectedFile.name}`;
+
+            }
+
+        }else{
+
+            visibleText =
+                text
+                ? `${text}\n🎥 ${selectedFile.name}`
+                : `🎥 ${selectedFile.name}`;
+
+            /*
+             * فعلاً ویدیو را به‌صورت فایل خام
+             * به OpenRouter نمی‌فرستیم تا دوباره
+             * خطای Provider ایجاد نکند.
+             */
+
+            apiContent =
+                text
+                ? `${text}\n[ویدئو پیوست شد: ${selectedFile.name}]`
+                : `[ویدئو پیوست شد: ${selectedFile.name}]`;
+
         }
 
-        displayText +=
-            selectedImageData
-                ? `🖼️ تصویر: ${selectedFile.name}`
-                : `🎬 ویدئو پیوست شد: ${selectedFile.name}`;
-
     }
 
-    let apiContent =
-        displayText;
 
-    if (selectedImageData) {
-
-        apiContent = [
-            {
-                type: "text",
-                text:
-                    text ||
-                    "این تصویر را بررسی کن."
-            },
-            {
-                type: "image_url",
-                image_url: {
-                    url:
-                        selectedImageData
-                }
-            }
-        ];
-
-    }
+    /* ---------------------------------------------
+       Add user message immediately
+    --------------------------------------------- */
 
     const userMessage = {
-        role: "user",
-        content: displayText,
-        apiContent
-    };
 
-    if (
-        welcome.parentNode
-    ) {
-        welcome.remove();
-    }
+        role:"user",
+
+        content:
+            visibleText,
+
+        apiContent:
+            apiContent
+
+    };
 
     messages.push(
         userMessage
     );
 
-    const userElement =
-        createMessage(
-            userMessage
-        );
+    messages =
+        messages.slice(-10);
 
-    chatInner.appendChild(
-        userElement
+    renderMessage(
+        userMessage
     );
 
-    if (
-        selectedImageData
-    ) {
+    save();
 
-        const img =
-            document.createElement(
-                "img"
-            );
+    input.value =
+        "";
 
-        img.className =
-            "attached-image";
+    input.style.height =
+        "42px";
 
-        img.src =
-            selectedImageData;
+    selectedFile =
+        null;
 
-        userElement
-            .querySelector(
-                ".message-content"
-            )
-            .appendChild(img);
+    fileInput.value =
+        "";
 
-    }
-
-    saveHistory();
-    renderHistory();
-
-    input.value = "";
-    input.style.height = "auto";
-
-    selectedFile = null;
-    selectedImageData = null;
-
-    fileInput.value = "";
-
-    filePreview.style.display =
+    preview.style.display =
         "none";
 
-    const thinking =
-        createThinking();
+    preview.textContent =
+        "";
 
-    chatInner.appendChild(
-        thinking
-    );
+    scrollBottom();
 
-    if (follow) {
-        requestAnimationFrame(
-            () => scrollBottom(true)
-        );
-    }
 
-    try {
+    /* ---------------------------------------------
+       Thinking
+    --------------------------------------------- */
+
+    showThinking();
+
+
+    try{
 
         const apiMessages =
-            messages
-                .slice(-MAX_HISTORY)
-                .map(message => {
+            messages.map(
+                message => ({
 
-                    return {
-                        role:
-                            message.role,
+                    role:
+                        message.role,
 
-                        content:
-                            message.apiContent ||
-                            message.content ||
-                            ""
-                    };
+                    content:
+                        message.apiContent ??
+                        message.content
 
-                });
+                })
+            );
+
 
         const response =
             await fetch(
-                API_URL,
+                "/api/chat",
                 {
-                    method: "POST",
+                    method:"POST",
 
-                    headers: {
+                    headers:{
                         "Content-Type":
                             "application/json"
                     },
@@ -1550,150 +1258,155 @@ async function sendMessage() {
                 }
             );
 
-        /*
-         * اول متن خام را می‌گیریم.
-         * این جلوی خطای:
-         * Unexpected token <
-         * و خطاهای مشابه را می‌گیرد.
-         */
 
         const raw =
             await response.text();
 
         let data = null;
 
-        try {
+        try{
 
             data =
-                JSON.parse(raw);
+                JSON.parse(
+                    raw
+                );
 
-        } catch {
+        }catch{
 
             console.error(
-                "Raw server response:",
+                "SERVER RAW:",
                 raw
             );
 
             throw new Error(
                 response.ok
-                    ? "سرور پاسخ JSON معتبر نداد."
-                    : `سرور خطا داد (HTTP ${response.status})`
+                ? "سرور پاسخ JSON معتبر نداد."
+                : `سرور خطا داد (HTTP ${response.status})`
             );
 
         }
 
-        if (
+
+        if(
             !response.ok ||
             !data.success
-        ) {
+        ){
 
-            let error =
+            throw new Error(
                 data.error ||
-                `خطای سرور (${response.status})`;
-
-            if (
-                data.details
-            ) {
-
-                console.error(
-                    "Server details:",
-                    data.details
-                );
-
-            }
-
-            throw new Error(
-                error
+                `خطای سرور HTTP ${response.status}`
             );
 
         }
 
-        const answer =
-            String(
-                data.reply || ""
-            ).trim();
 
-        if (!answer) {
+        if(
+            !data.reply ||
+            !String(data.reply).trim()
+        ){
 
             throw new Error(
-                "پاسخ خالی از سرور دریافت شد."
+                "مدل پاسخ متنی برنگرداند."
             );
 
         }
 
-        thinking.remove();
 
-        const assistant =
-            {
-                role: "assistant",
-                content: answer
-            };
+        hideThinking();
+
+
+        /* ---------------------------------------------
+           Assistant message
+        --------------------------------------------- */
+
+        const assistantMessage = {
+
+            role:
+                "assistant",
+
+            content:
+                String(data.reply)
+
+        };
 
         messages.push(
-            assistant
+            assistantMessage
         );
 
-        const assistantElement =
-            createMessage(
-                assistant
+        messages =
+            messages.slice(-10);
+
+        const row =
+            document.createElement(
+                "div"
             );
 
-        chatInner.appendChild(
-            assistantElement
-        );
+        row.className =
+            "message assistant";
 
         const content =
-            assistantElement
-                .querySelector(
-                    ".message-content"
-                );
+            document.createElement(
+                "div"
+            );
+
+        content.className =
+            "message-content";
+
+        row.appendChild(
+            content
+        );
+
+        chatInner.appendChild(
+            row
+        );
+
 
         await smoothReveal(
             content,
-            answer,
-            follow
+            assistantMessage.content
         );
 
-        saveHistory();
-        renderHistory();
 
-    } catch (error) {
+        save();
+
+
+    }catch(error){
+
+        hideThinking();
 
         console.error(
-            "BEHRAD AI ERROR:",
             error
         );
 
-        if (
-            thinking.parentNode
-        ) {
-            thinking.remove();
-        }
-
         const errorMessage = {
-            role: "assistant",
+
+            role:
+                "assistant",
+
             content:
-                `❌ ${error.message}`
+                `❌ ${error.message || "خطای ناشناخته‌ای رخ داد."}`
+
         };
 
         messages.push(
             errorMessage
         );
 
-        chatInner.appendChild(
-            createMessage(
-                errorMessage
-            )
+        messages =
+            messages.slice(-10);
+
+        renderMessage(
+            errorMessage
         );
 
-        saveHistory();
-        renderHistory();
+        save();
 
-    } finally {
+    }finally{
 
-        generating = false;
+        waiting = false;
 
-        sendButton.disabled = false;
+        sendButton.disabled =
+            false;
 
         input.focus();
 
@@ -1702,18 +1415,28 @@ async function sendMessage() {
 }
 
 
-sendButton.onclick =
-    sendMessage;
+/* =====================================================
+   SEND BUTTON
+===================================================== */
 
+sendButton.addEventListener(
+    "click",
+    sendMessage
+);
+
+
+/* =====================================================
+   ENTER
+===================================================== */
 
 input.addEventListener(
     "keydown",
     event => {
 
-        if (
+        if(
             event.key === "Enter" &&
             !event.shiftKey
-        ) {
+        ){
 
             event.preventDefault();
 
@@ -1725,50 +1448,49 @@ input.addEventListener(
 );
 
 
+/* =====================================================
+   AUTO RESIZE
+===================================================== */
+
 input.addEventListener(
     "input",
     () => {
 
         input.style.height =
-            "auto";
+            "42px";
 
         input.style.height =
             Math.min(
                 input.scrollHeight,
-                150
+                180
             ) + "px";
 
     }
 );
 
 
-newChat.onclick =
-    () => {
+/* =====================================================
+   START
+===================================================== */
 
-        if (generating) {
-            return;
-        }
+load();
 
-        messages = [];
+if(messages.length === 0){
 
-        localStorage.removeItem(
-            STORAGE_KEY
-        );
+    messages.push({
 
-        chatInner.innerHTML = "";
+        role:"assistant",
 
-        chatInner.appendChild(
-            welcome
-        );
+        content:
+            "سلام! 👋 من **BEHRAD AI** هستم. چه کاری برات انجام بدم؟"
 
-        renderHistory();
+    });
 
-        input.focus();
+    save();
 
-    };
+    renderAll();
 
-
-loadHistory();
+}
 
 input.focus();
 
