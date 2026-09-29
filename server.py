@@ -1,16 +1,12 @@
 import os
 import json
+import time
 import requests
 
-from flask import Flask, request, jsonify, Response, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory
 
 
 app = Flask(__name__, static_folder=".", static_url_path="")
-
-
-# =========================================================
-# CONFIG
-# =========================================================
 
 OPENROUTER_API_KEY = os.environ.get(
     "OPENROUTER_API_KEY",
@@ -23,69 +19,60 @@ OPENROUTER_URL = (
     "https://openrouter.ai/api/v1/chat/completions"
 )
 
-MAX_HISTORY = 14
-MAX_MESSAGE_CHARS = 12000
-MAX_TOTAL_CHARS = 50000
+MAX_HISTORY = 12
+MAX_MESSAGE_CHARS = 10000
+MAX_TOTAL_CHARS = 40000
 
-
-# =========================================================
-# SYSTEM PROMPT
-# =========================================================
+REQUEST_TIMEOUT = (20, 120)
 
 SYSTEM_PROMPT = """
 تو BEHRAD AI هستی؛ یک دستیار هوش مصنوعی فارسی‌زبان حرفه‌ای.
 
 اطلاعات پروژه:
 
-صاحب و سازنده BEHRAD AI:
+صاحب BEHRAD AI:
 بهراد محمدی
 
-نام مستعار:
+سازنده BEHRAD AI:
+بهراد محمدی
+
+نام مستعار سازنده:
 بهراد ام پلیر
 
 نام برند:
 BEHRAD M PLAYER
 
-اگر کاربر درباره صاحب، سازنده، مالک یا خالق BEHRAD AI پرسید،
-پاسخ بده:
+اگر کاربر درباره صاحب، سازنده، مالک یا خالق BEHRAD AI پرسید، بگو:
 
 «صاحب و سازنده BEHRAD AI، بهراد محمدی ملقب به بهراد ام پلیر (BEHRAD M PLAYER) است.»
 
-قوانین پاسخ:
+قوانین:
 
-1. اگر کاربر فارسی صحبت کرد، فارسی روان و خوانا پاسخ بده.
-2. اگر کاربر انگلیسی صحبت کرد، انگلیسی پاسخ بده.
-3. پاسخ‌ها طبیعی، دوستانه و دقیق باشند.
-4. برای اطلاعات جدید و به‌روز، در صورت نیاز از Web Search استفاده کن.
-5. اگر کاربر درباره اخبار، قیمت، وضعیت فعلی، افراد یا سایت‌های امروزی پرسید، در صورت نیاز جستجو کن.
-6. در برنامه‌نویسی، تا جای ممکن کد کامل و قابل استفاده بده.
-7. از Markdown برای خوانایی استفاده کن.
-8. اگر پاسخ شامل کد است، از code fence استفاده کن.
-9. فارسی را با UTF-8 صحیح تولید کن.
-10. اگر اطلاعات کافی نداری، حدس بی‌پایه نزن.
+- اگر کاربر فارسی صحبت کرد، فارسی روان پاسخ بده.
+- اگر کاربر انگلیسی صحبت کرد، انگلیسی پاسخ بده.
+- پاسخ طبیعی و دوستانه باشد.
+- اطلاعات جدید را در صورت نیاز با Web Search بررسی کن.
+- برای برنامه‌نویسی، کد کامل و قابل استفاده بده.
+- از Markdown استفاده کن.
+- اطلاعات را بدون دلیل حدس نزن.
+- پاسخ را واضح و کاربردی بنویس.
 """
 
 
-# =========================================================
-# HELPERS
-# =========================================================
+def make_error(message, status=500, details=None):
 
-def error_response(message, status=500, details=None):
-    data = {
+    result = {
         "success": False,
         "error": message
     }
 
     if details is not None:
-        data["details"] = details
+        result["details"] = details
 
-    return jsonify(data), status
+    return jsonify(result), status
 
 
 def normalize_content(content):
-    """
-    متن ساده یا محتوای multimodal را تمیز می‌کند.
-    """
 
     if isinstance(content, str):
         return content[:MAX_MESSAGE_CHARS]
@@ -99,9 +86,9 @@ def normalize_content(content):
             if not isinstance(part, dict):
                 continue
 
-            part_type = part.get("type")
+            kind = part.get("type")
 
-            if part_type == "text":
+            if kind == "text":
 
                 result.append({
                     "type": "text",
@@ -110,24 +97,14 @@ def normalize_content(content):
                     )[:MAX_MESSAGE_CHARS]
                 })
 
-            elif part_type == "image_url":
+            elif kind == "image_url":
 
-                image_url = part.get(
-                    "image_url"
-                )
+                image = part.get("image_url")
 
-                if isinstance(image_url, dict):
-
-                    url = image_url.get(
-                        "url",
-                        ""
-                    )
-
+                if isinstance(image, dict):
+                    url = image.get("url", "")
                 else:
-
-                    url = str(
-                        image_url or ""
-                    )
+                    url = str(image or "")
 
                 result.append({
                     "type": "image_url",
@@ -148,9 +125,8 @@ def clean_messages(messages):
 
     messages = messages[-MAX_HISTORY:]
 
-    cleaned = []
-
-    total_chars = 0
+    result = []
+    total = 0
 
     for msg in messages:
 
@@ -159,22 +135,16 @@ def clean_messages(messages):
 
         role = msg.get("role")
 
-        if role not in (
-            "user",
-            "assistant"
-        ):
+        if role not in ("user", "assistant"):
             continue
 
         content = normalize_content(
-            msg.get(
-                "content",
-                ""
-            )
+            msg.get("content", "")
         )
 
         if isinstance(content, str):
 
-            total_chars += len(content)
+            total += len(content)
 
         else:
 
@@ -182,32 +152,32 @@ def clean_messages(messages):
 
                 if part.get("type") == "text":
 
-                    total_chars += len(
+                    total += len(
                         part.get(
                             "text",
                             ""
                         )
                     )
 
-        if total_chars > MAX_TOTAL_CHARS:
+        if total > MAX_TOTAL_CHARS:
             break
 
-        cleaned.append({
+        result.append({
             "role": role,
             "content": content
         })
 
-    return cleaned
+    return result
 
 
-def openrouter_headers():
+def headers():
 
     return {
         "Authorization":
             f"Bearer {OPENROUTER_API_KEY}",
 
         "Content-Type":
-            "application/json; charset=utf-8",
+            "application/json",
 
         "Accept":
             "application/json",
@@ -220,64 +190,45 @@ def openrouter_headers():
     }
 
 
-def create_payload(messages):
+def build_payload(messages):
 
     return {
-
-        "model":
-            MODEL,
+        "model": MODEL,
 
         "messages": [
             {
-                "role":
-                    "system",
-
-                "content":
-                    SYSTEM_PROMPT
+                "role": "system",
+                "content": SYSTEM_PROMPT
             },
-
             *messages
         ],
 
-        "temperature":
-            0.7,
+        "temperature": 0.7,
 
-        "max_tokens":
-            4000,
+        "max_tokens": 3000,
 
-        "stream":
-            False,
-
-        # =================================================
-        # OPENROUTER WEB SEARCH
-        # =================================================
+        "stream": False,
 
         "tools": [
             {
-                "type":
-                    "openrouter:web_search",
+                "type": "openrouter:web_search",
 
                 "parameters": {
-                    "engine":
-                        "auto",
-
-                    "max_results":
-                        5,
-
-                    "max_total_results":
-                        10
+                    "engine": "auto",
+                    "max_results": 5,
+                    "max_total_results": 10
                 }
             }
         ]
     }
 
 
-def extract_answer(result):
+def extract_answer(data):
 
-    choices = result.get(
-        "choices",
-        []
-    )
+    choices = data.get("choices")
+
+    if not isinstance(choices, list):
+        return None
 
     if not choices:
         return None
@@ -290,45 +241,107 @@ def extract_answer(result):
     if not isinstance(message, dict):
         return None
 
-    content = message.get(
-        "content"
-    )
+    content = message.get("content")
 
-    # معمول‌ترین حالت
-    if isinstance(content, str) and content.strip():
-        return content.strip()
+    if isinstance(content, str):
 
-    # بعضی پاسخ‌ها ممکن است content را به شکل list برگردانند
+        text = content.strip()
+
+        if text:
+            return text
+
     if isinstance(content, list):
 
-        text_parts = []
+        parts = []
 
-        for part in content:
+        for item in content:
 
-            if isinstance(part, dict):
+            if isinstance(item, dict):
 
-                text = part.get(
-                    "text"
-                )
+                text = item.get("text")
 
                 if text:
-                    text_parts.append(
+                    parts.append(
                         str(text)
                     )
 
-        joined = "".join(
-            text_parts
-        ).strip()
+        text = "".join(parts).strip()
 
-        if joined:
-            return joined
+        if text:
+            return text
 
     return None
 
 
-# =========================================================
-# HOME
-# =========================================================
+def call_openrouter(payload):
+
+    last_error = None
+
+    for attempt in range(3):
+
+        try:
+
+            response = requests.post(
+                OPENROUTER_URL,
+                headers=headers(),
+                json=payload,
+                timeout=REQUEST_TIMEOUT
+            )
+
+            # موقتاً دوباره امتحان کن
+            if response.status_code in (
+                408,
+                429,
+                500,
+                502,
+                503,
+                504
+            ):
+
+                last_error = (
+                    f"HTTP {response.status_code}: "
+                    f"{response.text[:1000]}"
+                )
+
+                if attempt < 2:
+
+                    time.sleep(
+                        1.5 * (attempt + 1)
+                    )
+
+                    continue
+
+            return response
+
+        except requests.exceptions.Timeout as e:
+
+            last_error = str(e)
+
+            if attempt < 2:
+
+                time.sleep(
+                    1.5 * (attempt + 1)
+                )
+
+                continue
+
+        except requests.exceptions.RequestException as e:
+
+            last_error = str(e)
+
+            if attempt < 2:
+
+                time.sleep(
+                    1.5 * (attempt + 1)
+                )
+
+                continue
+
+    raise RuntimeError(
+        last_error or
+        "ارتباط با OpenRouter برقرار نشد."
+    )
+
 
 @app.route("/")
 def home():
@@ -339,33 +352,18 @@ def home():
     )
 
 
-# =========================================================
-# HEALTH
-# =========================================================
-
 @app.route("/health")
 def health():
 
     return jsonify({
-        "status":
-            "ok",
-
-        "service":
-            "BEHRAD AI",
-
-        "model":
-            MODEL,
-
+        "success": True,
+        "status": "ok",
+        "service": "BEHRAD AI",
+        "model": MODEL,
         "api_key_configured":
-            bool(
-                OPENROUTER_API_KEY
-            )
+            bool(OPENROUTER_API_KEY)
     })
 
-
-# =========================================================
-# CHAT
-# =========================================================
 
 @app.route(
     "/api/chat",
@@ -375,16 +373,12 @@ def chat():
 
     if not OPENROUTER_API_KEY:
 
-        return error_response(
+        return make_error(
             "OPENROUTER_API_KEY تنظیم نشده است.",
             500
         )
 
     try:
-
-        # ---------------------------------------------
-        # READ JSON
-        # ---------------------------------------------
 
         data = request.get_json(
             force=True,
@@ -393,7 +387,7 @@ def chat():
 
         if not isinstance(data, dict):
 
-            return error_response(
+            return make_error(
                 "درخواست JSON معتبر نیست.",
                 400
             )
@@ -407,74 +401,58 @@ def chat():
 
         if not messages:
 
-            return error_response(
+            return make_error(
                 "پیامی دریافت نشد.",
                 400
             )
 
-        # ---------------------------------------------
-        # REQUEST
-        # ---------------------------------------------
-
-        payload = create_payload(
+        payload = build_payload(
             messages
         )
 
-        response = requests.post(
-
-            OPENROUTER_URL,
-
-            headers=
-                openrouter_headers(),
-
-            json=
-                payload,
-
-            timeout=
-                (30, 180)
+        response = call_openrouter(
+            payload
         )
 
-        # ---------------------------------------------
+        # -----------------------------------------
         # OPENROUTER ERROR
-        # ---------------------------------------------
+        # -----------------------------------------
 
         if response.status_code != 200:
 
+            raw = response.text[:5000]
+
             try:
-
                 details = response.json()
-
             except Exception:
+                details = raw
 
-                details = response.text[
-                    :5000
-                ]
-
-            return error_response(
-                "OpenRouter خطا داد.",
+            return make_error(
+                f"OpenRouter خطا داد "
+                f"(HTTP {response.status_code})",
                 response.status_code,
                 details
             )
 
-        # ---------------------------------------------
+        # -----------------------------------------
         # JSON
-        # ---------------------------------------------
+        # -----------------------------------------
 
         try:
 
             result = response.json()
 
-        except Exception as e:
+        except ValueError:
 
-            return error_response(
-                "پاسخ OpenRouter JSON معتبر نبود.",
+            return make_error(
+                "OpenRouter پاسخ JSON معتبر نداد.",
                 502,
-                str(e)
+                response.text[:3000]
             )
 
-        # ---------------------------------------------
+        # -----------------------------------------
         # ANSWER
-        # ---------------------------------------------
+        # -----------------------------------------
 
         answer = extract_answer(
             result
@@ -483,26 +461,21 @@ def chat():
         if answer:
 
             return jsonify({
-
-                "success":
-                    True,
-
-                "reply":
-                    answer,
-
-                "model":
-                    MODEL
-
+                "success": True,
+                "reply": answer,
+                "model": MODEL
             })
 
-        # ---------------------------------------------
-        # NO TEXT
-        # ---------------------------------------------
+        # -----------------------------------------
+        # EMPTY CONTENT
+        # -----------------------------------------
 
         choices = result.get(
             "choices",
             []
         )
+
+        details = {}
 
         if choices:
 
@@ -511,137 +484,86 @@ def chat():
                 {}
             )
 
-            tool_calls = message.get(
-                "tool_calls"
-            )
-
-            refusal = message.get(
-                "refusal"
-            )
-
-            reasoning = (
-                message.get(
-                    "reasoning"
-                )
-                or
-                message.get(
-                    "reasoning_content"
-                )
-            )
-
             details = {
-                "has_tool_calls":
-                    bool(tool_calls),
-
-                "refusal":
-                    refusal,
-
-                "has_reasoning":
-                    bool(reasoning),
-
                 "finish_reason":
                     choices[0].get(
                         "finish_reason"
+                    ),
+
+                "has_tool_calls":
+                    bool(
+                        message.get(
+                            "tool_calls"
+                        )
+                    ),
+
+                "refusal":
+                    message.get(
+                        "refusal"
                     )
             }
 
-            return error_response(
-                "مدل پاسخ متنی قابل نمایش برنگرداند.",
-                502,
-                details
-            )
-
-        return error_response(
-            "OpenRouter پاسخ خالی برگرداند.",
+        return make_error(
+            "مدل پاسخ متنی قابل نمایش برنگرداند.",
             502,
-            result
+            details
         )
 
-    except requests.exceptions.Timeout:
+    except RuntimeError as e:
 
-        return error_response(
-            "زمان پاسخ OpenRouter تمام شد.",
-            504
-        )
-
-    except requests.exceptions.RequestException as e:
-
-        return error_response(
-            "ارتباط با OpenRouter برقرار نشد.",
-            502,
-            str(e)
+        return make_error(
+            str(e),
+            502
         )
 
     except Exception as e:
 
-        return error_response(
+        return make_error(
             f"خطای سرور: {str(e)}",
             500
         )
 
-
-# =========================================================
-# TEST AI
-# =========================================================
 
 @app.route("/api/test-ai")
 def test_ai():
 
     if not OPENROUTER_API_KEY:
 
-        return error_response(
+        return make_error(
             "OPENROUTER_API_KEY تنظیم نشده است.",
             500
         )
 
     try:
 
-        payload = create_payload([
+        payload = build_payload([
             {
-                "role":
-                    "user",
-
+                "role": "user",
                 "content":
-                    "سلام رفیق، فقط بگو سلام!"
+                    "سلام. فقط کوتاه جواب بده."
             }
         ])
 
-        response = requests.post(
-
-            OPENROUTER_URL,
-
-            headers=
-                openrouter_headers(),
-
-            json=
-                payload,
-
-            timeout=
-                (30, 180)
+        response = call_openrouter(
+            payload
         )
 
-        return Response(
-
-            response.content,
-
-            status=
-                response.status_code,
-
-            content_type=
-                "application/json; charset=utf-8"
+        return (
+            response.text,
+            response.status_code,
+            {
+                "Content-Type":
+                    "application/json; charset=utf-8"
+            }
         )
 
     except Exception as e:
 
-        return error_response(
+        return make_error(
             str(e),
-            500
+            502
         )
 
-
-# =========================================================
-# RUN
-# =========================================================
 
 if __name__ == "__main__":
 
@@ -653,13 +575,7 @@ if __name__ == "__main__":
     )
 
     app.run(
-
-        host=
-            "0.0.0.0",
-
-        port=
-            port,
-
-        debug=
-            False
-        )
+        host="0.0.0.0",
+        port=port,
+        debug=False
+            )
