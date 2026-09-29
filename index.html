@@ -3,619 +3,569 @@
 
 <head>
 
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>BEHRAD AI</title>
-
-    <!-- MARKED -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-    <!-- DOMPURIFY -->
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
-
-    <style>
-
-        * {
-            box-sizing: border-box;
-        }
-
-        html,
-        body {
-            margin: 0;
-            width: 100%;
-            height: 100%;
-            background: #212121;
-            color: #ececec;
-            font-family:
-                Tahoma,
-                Arial,
-                sans-serif;
-        }
-
-        body {
-            overflow: hidden;
-        }
-
-        button,
-        textarea {
-            font-family: inherit;
-        }
-
-        /* =================================================
-           APP
-        ================================================= */
-
-        .app {
-            width: 100%;
-            height: 100vh;
-            display: flex;
-            background: #212121;
-        }
-
-        /* =================================================
-           SIDEBAR
-        ================================================= */
-
-        .sidebar {
-            width: 260px;
-            height: 100%;
-            background: #171717;
-            border-left: 1px solid #2d2d2d;
-            display: flex;
-            flex-direction: column;
-            padding: 12px;
-            flex-shrink: 0;
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 11px;
-            padding: 12px 10px 18px;
-        }
-
-        .brand-logo {
-            width: 34px;
-            height: 34px;
-            border-radius: 10px;
-            background: #10a37f;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 14px;
-        }
-
-        .brand-text {
-            font-size: 17px;
-            font-weight: bold;
-        }
-
-        .new-chat {
-            width: 100%;
-            border: 1px solid #3a3a3a;
-            background: #212121;
-            color: #fff;
-            padding: 12px;
-            border-radius: 9px;
-            cursor: pointer;
-            font-size: 14px;
-            text-align: right;
-            transition: 0.2s;
-        }
-
-        .new-chat:hover {
-            background: #2a2a2a;
-        }
-
-        .history-title {
-            color: #888;
-            font-size: 12px;
-            margin: 22px 8px 8px;
-        }
-
-        .history {
-            flex: 1;
-            overflow-y: auto;
-        }
-
-        .history-item {
-            padding: 10px;
-            border-radius: 7px;
-            color: #bbb;
-            font-size: 13px;
-            cursor: pointer;
-            overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-        }
-
-        .history-item:hover {
-            background: #242424;
-            color: white;
-        }
-
-        .sidebar-bottom {
-            border-top: 1px solid #2d2d2d;
-            padding-top: 12px;
-            color: #777;
-            font-size: 11px;
-            line-height: 1.8;
-        }
-
-        /* =================================================
-           MAIN
-        ================================================= */
-
-        .main {
-            flex: 1;
-            min-width: 0;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        .topbar {
-            height: 58px;
-            border-bottom: 1px solid #303030;
-            display: flex;
-            align-items: center;
-            padding: 0 22px;
-            flex-shrink: 0;
-            background: rgba(33,33,33,0.96);
-        }
-
-        .model-name {
-            font-size: 14px;
-            color: #ddd;
-            font-weight: bold;
-        }
-
-        .model-status {
-            margin-right: 10px;
-            color: #777;
-            font-size: 11px;
-        }
-
-        /* =================================================
-           CHAT
-        ================================================= */
-
-        .chat {
-            flex: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
-            scroll-behavior: auto;
-            padding: 28px 20px 150px;
-        }
-
-        .chat-inner {
-            max-width: 850px;
-            margin: 0 auto;
-        }
-
-        .welcome {
-            min-height: 55vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
-
-        .welcome-logo {
-            width: 58px;
-            height: 58px;
-            border-radius: 18px;
-            background: #10a37f;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 18px;
-        }
-
-        .welcome h1 {
-            font-size: 27px;
-            margin: 0 0 10px;
-        }
-
-        .welcome p {
-            color: #999;
-            font-size: 14px;
-            margin: 0;
-        }
-
-        /* =================================================
-           MESSAGE
-        ================================================= */
-
-        .message {
-            display: flex;
-            gap: 14px;
-            margin-bottom: 30px;
-            animation: messageIn 0.18s ease;
-        }
-
-        @keyframes messageIn {
-
-            from {
-                opacity: 0;
-                transform: translateY(4px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-
-        }
-
-        .avatar {
-            width: 32px;
-            height: 32px;
-            min-width: 32px;
-            border-radius: 9px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .user .avatar {
-            background: #444;
-        }
-
-        .assistant .avatar {
-            background: #10a37f;
-        }
-
-        .message-body {
-            min-width: 0;
-            flex: 1;
-        }
-
-        .message-name {
-            font-size: 12px;
-            color: #aaa;
-            margin-bottom: 7px;
-        }
-
-        .message-content {
-            color: #ececec;
-            line-height: 1.9;
-            font-size: 14px;
-            word-wrap: break-word;
-            overflow-wrap: anywhere;
-        }
-
-        .user .message-content {
-            white-space: pre-wrap;
-        }
-
-        /* =================================================
-           MARKDOWN
-        ================================================= */
-
-        .message-content p {
-            margin: 0 0 12px;
-        }
-
-        .message-content p:last-child {
-            margin-bottom: 0;
-        }
-
-        .message-content ul,
-        .message-content ol {
-            padding-right: 25px;
-        }
-
-        .message-content blockquote {
-            border-right: 3px solid #10a37f;
-            margin: 15px 0;
-            padding: 5px 14px;
-            color: #aaa;
-        }
-
-        .message-content code:not(pre code) {
-            background: #2b2b2b;
-            border: 1px solid #3b3b3b;
-            border-radius: 5px;
-            padding: 2px 6px;
-            font-family: Consolas, monospace;
-            direction: ltr;
-            unicode-bidi: plaintext;
-        }
-
-        .code-wrap {
-            position: relative;
-            margin: 15px 0;
-        }
-
-        .code-wrap pre {
-            margin: 0;
-            background: #111;
-            border: 1px solid #303030;
-            border-radius: 10px;
-            padding: 17px;
-            overflow-x: auto;
-            direction: ltr;
-            text-align: left;
-        }
-
-        .code-wrap pre code {
-            font-family:
-                Consolas,
-                "Courier New",
-                monospace;
-
-            font-size: 13px;
-            line-height: 1.7;
-        }
-
-        .copy-code {
-            position: absolute;
-            left: 9px;
-            top: 8px;
-            border: 1px solid #444;
-            background: #222;
-            color: #ccc;
-            border-radius: 6px;
-            padding: 5px 9px;
-            cursor: pointer;
-            font-size: 11px;
-        }
-
-        .copy-code:hover {
-            background: #333;
-            color: white;
-        }
-
-        /* =================================================
-           THINKING
-        ================================================= */
-
-        .thinking {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            color: #999;
-            font-size: 12px;
-            margin-top: 5px;
-        }
-
-        .wave {
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            height: 18px;
-        }
-
-        .wave span {
-            width: 3px;
-            height: 7px;
-            background: #10a37f;
-            border-radius: 5px;
-            animation: wave 0.8s infinite ease-in-out;
-        }
-
-        .wave span:nth-child(2) {
-            animation-delay: 0.1s;
-        }
-
-        .wave span:nth-child(3) {
-            animation-delay: 0.2s;
-        }
-
-        .wave span:nth-child(4) {
-            animation-delay: 0.3s;
-        }
-
-        .wave span:nth-child(5) {
-            animation-delay: 0.4s;
-        }
-
-        @keyframes wave {
-
-            0%,
-            100% {
-                height: 6px;
-            }
-
-            50% {
-                height: 17px;
-            }
-
-        }
-
-        /* =================================================
-           INPUT AREA
-        ================================================= */
-
-        .input-area {
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            padding: 18px 20px 22px;
-            background:
-                linear-gradient(
-                    to bottom,
-                    transparent,
-                    #212121 22%
-                );
-        }
-
-        .input-box {
-            max-width: 850px;
-            margin: 0 auto;
-            background: #2f2f2f;
-            border: 1px solid #454545;
-            border-radius: 15px;
-            display: flex;
-            align-items: flex-end;
-            padding: 9px;
-            box-shadow:
-                0 8px 30px rgba(0,0,0,0.25);
-        }
-
-        textarea {
-            flex: 1;
-            resize: none;
-            border: none;
-            outline: none;
-            background: transparent;
-            color: #fff;
-            padding: 9px 10px;
-            min-height: 42px;
-            max-height: 180px;
-            line-height: 1.7;
-            font-size: 14px;
-        }
-
-        textarea::placeholder {
-            color: #777;
-        }
-
-        .attach {
-            width: 38px;
-            height: 38px;
-            border: none;
-            background: transparent;
-            color: #aaa;
-            cursor: pointer;
-            border-radius: 9px;
-            font-size: 18px;
-        }
-
-        .attach:hover {
-            background: #3a3a3a;
-            color: white;
-        }
-
-        .send {
-            width: 39px;
-            height: 39px;
-            border: none;
-            border-radius: 10px;
-            background: #10a37f;
-            color: white;
-            cursor: pointer;
-            font-size: 17px;
-            transition: 0.15s;
-        }
-
-        .send:hover {
-            filter: brightness(1.1);
-        }
-
-        .send:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
-        }
-
-        .file-preview {
-            max-width: 850px;
-            margin: 0 auto 7px;
-            display: none;
-            align-items: center;
-            justify-content: space-between;
-            background: #2a2a2a;
-            border: 1px solid #3d3d3d;
-            border-radius: 9px;
-            padding: 8px 11px;
-            font-size: 12px;
-            color: #bbb;
-        }
-
-        .remove-file {
-            border: none;
-            background: transparent;
-            color: #888;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        /* =================================================
-           IMAGE
-        ================================================= */
-
-        .attached-image {
-            max-width: 420px;
-            max-height: 320px;
-            border-radius: 10px;
-            margin-top: 10px;
-            display: block;
-            border: 1px solid #444;
-        }
-
-        /* =================================================
-           MOBILE
-        ================================================= */
-
-        @media (max-width: 760px) {
-
-            .sidebar {
-                display: none;
-            }
-
-            .chat {
-                padding-left: 13px;
-                padding-right: 13px;
-            }
-
-            .input-area {
-                padding-left: 10px;
-                padding-right: 10px;
-            }
-
-            .topbar {
-                padding: 0 15px;
-            }
-
-            .message {
-                gap: 9px;
-            }
-
-            .avatar {
-                width: 29px;
-                min-width: 29px;
-                height: 29px;
-            }
-
-        }
-
-    </style>
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+>
+
+<title>BEHRAD AI</title>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: #212121;
+    color: #ececec;
+    font-family: Tahoma, Arial, sans-serif;
+}
+
+body {
+    overflow: hidden;
+}
+
+button,
+textarea,
+input {
+    font-family: inherit;
+}
+
+.app {
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    display: flex;
+    background: #212121;
+}
+
+.sidebar {
+    width: 260px;
+    flex: 0 0 260px;
+    height: 100%;
+    background: #171717;
+    border-left: 1px solid #303030;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+
+.logo {
+    width: 35px;
+    height: 35px;
+    border-radius: 10px;
+    background: #10a37f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.brand-name {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.new-chat {
+    width: 100%;
+    padding: 12px;
+    border-radius: 9px;
+    border: 1px solid #3d3d3d;
+    background: #212121;
+    color: white;
+    cursor: pointer;
+    text-align: right;
+}
+
+.new-chat:hover {
+    background: #292929;
+}
+
+.history-title {
+    color: #777;
+    font-size: 11px;
+    margin: 22px 8px 8px;
+}
+
+.history {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.history-item {
+    padding: 9px;
+    border-radius: 7px;
+    color: #aaa;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.history-item:hover {
+    background: #242424;
+    color: white;
+}
+
+.sidebar-bottom {
+    border-top: 1px solid #303030;
+    padding: 12px 7px 5px;
+    color: #666;
+    font-size: 10px;
+    line-height: 1.8;
+}
+
+.main {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.topbar {
+    height: 58px;
+    flex: 0 0 58px;
+    border-bottom: 1px solid #303030;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 22px;
+    background: #212121;
+}
+
+.model-name {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.model-status {
+    color: #777;
+    font-size: 11px;
+}
+
+.chat {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 25px 15px 25px;
+}
+
+.chat-inner {
+    width: 100%;
+    max-width: 850px;
+    margin: 0 auto;
+}
+
+.welcome {
+    min-height: 65vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+}
+
+.welcome-logo {
+    width: 58px;
+    height: 58px;
+    border-radius: 17px;
+    background: #10a37f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-bottom: 18px;
+}
+
+.welcome h1 {
+    font-size: 25px;
+    margin: 0 0 9px;
+}
+
+.welcome p {
+    margin: 0;
+    color: #888;
+    font-size: 13px;
+}
+
+.message {
+    display: flex;
+    gap: 13px;
+    margin-bottom: 30px;
+    animation: messageIn .16s ease;
+}
+
+@keyframes messageIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.avatar {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.user .avatar {
+    background: #444;
+}
+
+.assistant .avatar {
+    background: #10a37f;
+}
+
+.message-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.message-name {
+    color: #999;
+    font-size: 11px;
+    margin-bottom: 7px;
+}
+
+.message-content {
+    font-size: 14px;
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+}
+
+.message-content p {
+    margin: 0 0 12px;
+}
+
+.message-content p:last-child {
+    margin-bottom: 0;
+}
+
+.message-content code:not(pre code) {
+    background: #2b2b2b;
+    border: 1px solid #3a3a3a;
+    border-radius: 5px;
+    padding: 2px 6px;
+    font-family: Consolas, monospace;
+}
+
+.code-wrap {
+    position: relative;
+    margin: 14px 0;
+}
+
+.code-wrap pre {
+    margin: 0;
+    padding: 17px;
+    border-radius: 10px;
+    background: #111;
+    border: 1px solid #303030;
+    overflow-x: auto;
+    direction: ltr;
+    text-align: left;
+}
+
+.code-wrap pre code {
+    font-family: Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.copy-code {
+    position: absolute;
+    top: 7px;
+    left: 8px;
+    background: #222;
+    color: #bbb;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 5px 9px;
+    cursor: pointer;
+    font-size: 10px;
+}
+
+.copy-code:hover {
+    background: #333;
+    color: white;
+}
+
+.thinking {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: #888;
+    font-size: 11px;
+}
+
+.wave {
+    height: 18px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.wave span {
+    width: 3px;
+    height: 7px;
+    border-radius: 4px;
+    background: #10a37f;
+    animation: wave .75s infinite ease-in-out;
+}
+
+.wave span:nth-child(2) {
+    animation-delay: .1s;
+}
+
+.wave span:nth-child(3) {
+    animation-delay: .2s;
+}
+
+.wave span:nth-child(4) {
+    animation-delay: .3s;
+}
+
+.wave span:nth-child(5) {
+    animation-delay: .4s;
+}
+
+@keyframes wave {
+    0%,100% {
+        height: 6px;
+    }
+
+    50% {
+        height: 17px;
+    }
+}
+
+/* ================================
+   INPUT
+================================ */
+
+.input-area {
+    flex: 0 0 auto;
+    width: 100%;
+    padding:
+        10px
+        max(10px, env(safe-area-inset-right))
+        calc(12px + env(safe-area-inset-bottom))
+        max(10px, env(safe-area-inset-left));
+    background: #212121;
+}
+
+.input-box {
+    width: 100%;
+    max-width: 850px;
+    margin: 0 auto;
+    min-height: 54px;
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    padding: 7px;
+    background: #2f2f2f;
+    border: 1px solid #454545;
+    border-radius: 15px;
+}
+
+textarea {
+    flex: 1;
+    min-width: 0;
+    min-height: 40px;
+    max-height: 150px;
+    resize: none;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: white;
+    padding: 8px 9px;
+    line-height: 1.65;
+    font-size: 14px;
+}
+
+textarea::placeholder {
+    color: #777;
+}
+
+.attach,
+.send {
+    flex: 0 0 39px;
+    width: 39px;
+    height: 39px;
+    border-radius: 10px;
+    border: 0;
+    cursor: pointer;
+}
+
+.attach {
+    background: transparent;
+    color: #aaa;
+    font-size: 18px;
+}
+
+.attach:hover {
+    background: #3a3a3a;
+    color: white;
+}
+
+.send {
+    background: #10a37f;
+    color: white;
+    font-size: 17px;
+}
+
+.send:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+.file-preview {
+    width: 100%;
+    max-width: 850px;
+    margin: 0 auto 7px;
+    padding: 7px 10px;
+    border: 1px solid #3d3d3d;
+    border-radius: 8px;
+    background: #2a2a2a;
+    color: #aaa;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+}
+
+.remove-file {
+    border: 0;
+    background: transparent;
+    color: #888;
+    cursor: pointer;
+    font-size: 17px;
+}
+
+.attached-image {
+    max-width: min(420px, 100%);
+    max-height: 320px;
+    margin-top: 10px;
+    border-radius: 10px;
+    border: 1px solid #444;
+}
+
+@media (max-width: 760px) {
+
+    .sidebar {
+        display: none;
+    }
+
+    .topbar {
+        height: 52px;
+        flex-basis: 52px;
+        padding: 0 14px;
+    }
+
+    .chat {
+        padding:
+            18px 10px 18px;
+    }
+
+    .chat-inner {
+        max-width: 100%;
+    }
+
+    .message {
+        gap: 9px;
+        margin-bottom: 25px;
+    }
+
+    .avatar {
+        width: 29px;
+        height: 29px;
+        flex-basis: 29px;
+    }
+
+    .message-content {
+        font-size: 13px;
+    }
+
+    .welcome h1 {
+        font-size: 20px;
+    }
+
+    .input-area {
+        padding:
+            7px
+            8px
+            calc(8px + env(safe-area-inset-bottom))
+            8px;
+    }
+
+    .input-box {
+        min-height: 52px;
+        border-radius: 14px;
+    }
+
+    textarea {
+        font-size: 13px;
+    }
+
+    .attach,
+    .send {
+        width: 37px;
+        height: 37px;
+        flex-basis: 37px;
+    }
+}
+
+</style>
 
 </head>
-
 
 <body>
 
 <div class="app">
 
-    <!-- =================================================
-         SIDEBAR
-    ================================================= -->
-
     <aside class="sidebar">
 
         <div class="brand">
 
-            <div class="brand-logo">
+            <div class="logo">
                 BA
             </div>
 
-            <div class="brand-text">
+            <div class="brand-name">
                 BEHRAD AI
             </div>
 
@@ -638,26 +588,15 @@
         ></div>
 
         <div class="sidebar-bottom">
-
             BEHRAD AI
-
             <br>
-
-            ساخته‌شده توسط
-            بهراد محمدی
-
+            ساخته‌شده توسط بهراد محمدی
             <br>
-
             BEHRAD M PLAYER
-
         </div>
 
     </aside>
 
-
-    <!-- =================================================
-         MAIN
-    ================================================= -->
 
     <main class="main">
 
@@ -673,10 +612,6 @@
 
         </div>
 
-
-        <!-- =================================================
-             CHAT
-        ================================================= -->
 
         <div
             class="chat"
@@ -712,10 +647,6 @@
         </div>
 
 
-        <!-- =================================================
-             INPUT
-        ================================================= -->
-
         <div class="input-area">
 
             <div
@@ -723,9 +654,7 @@
                 id="filePreview"
             >
 
-                <span id="fileName">
-                    فایل
-                </span>
+                <span id="fileName"></span>
 
                 <button
                     class="remove-file"
@@ -735,7 +664,6 @@
                 </button>
 
             </div>
-
 
             <div class="input-box">
 
@@ -749,15 +677,14 @@
                 <button
                     class="attach"
                     id="attachButton"
-                    title="افزودن فایل"
                 >
                     ＋
                 </button>
 
                 <textarea
                     id="messageInput"
-                    placeholder="پیامت رو بنویس..."
                     rows="1"
+                    placeholder="پیامت رو بنویس..."
                 ></textarea>
 
                 <button
@@ -778,1421 +705,1072 @@
 
 <script>
 
-    // =====================================================
-    // CONFIG
-    // =====================================================
+const API_URL = "/api/chat";
 
-    const API_URL = "/api/chat";
+const STORAGE_KEY =
+    "behrad_ai_stable_v3";
 
-    const STORAGE_KEY =
-        "behrad_ai_smooth_v1";
+const MAX_HISTORY = 12;
 
-    const MAX_HISTORY =
-        14;
+let messages = [];
 
+let selectedFile = null;
 
-    // =====================================================
-    // STATE
-    // =====================================================
+let selectedImageData = null;
 
-    let messages = [];
-
-    let selectedFile = null;
-
-    let selectedImageData = null;
-
-    let generating = false;
+let generating = false;
 
 
-    // =====================================================
-    // ELEMENTS
-    // =====================================================
+const chat =
+    document.getElementById("chat");
 
-    const chat =
-        document.getElementById("chat");
+const chatInner =
+    document.getElementById("chatInner");
 
-    const chatInner =
-        document.getElementById("chatInner");
+const welcome =
+    document.getElementById("welcome");
 
-    const welcome =
-        document.getElementById("welcome");
+const input =
+    document.getElementById("messageInput");
 
-    const input =
-        document.getElementById("messageInput");
+const sendButton =
+    document.getElementById("sendButton");
 
-    const sendButton =
-        document.getElementById("sendButton");
+const attachButton =
+    document.getElementById("attachButton");
 
-    const attachButton =
-        document.getElementById("attachButton");
+const fileInput =
+    document.getElementById("fileInput");
 
-    const fileInput =
-        document.getElementById("fileInput");
+const filePreview =
+    document.getElementById("filePreview");
 
-    const filePreview =
-        document.getElementById("filePreview");
+const fileName =
+    document.getElementById("fileName");
 
-    const fileName =
-        document.getElementById("fileName");
+const removeFile =
+    document.getElementById("removeFile");
 
-    const removeFile =
-        document.getElementById("removeFile");
+const historyElement =
+    document.getElementById("history");
 
-    const historyElement =
-        document.getElementById("history");
-
-    const newChat =
-        document.getElementById("newChat");
+const newChat =
+    document.getElementById("newChat");
 
 
-    // =====================================================
-    // LOAD
-    // =====================================================
+function isNearBottom() {
 
-    function loadHistory() {
+    return (
+        chat.scrollHeight -
+        chat.scrollTop -
+        chat.clientHeight
+    ) < 120;
 
-        try {
+}
 
-            const saved =
-                localStorage.getItem(
-                    STORAGE_KEY
-                );
 
-            if (!saved) {
-                return;
-            }
+function scrollBottom(force = false) {
 
-            const parsed =
-                JSON.parse(saved);
+    if (
+        force ||
+        isNearBottom()
+    ) {
 
-            if (
-                Array.isArray(parsed)
-            ) {
+        chat.scrollTop =
+            chat.scrollHeight;
 
-                messages =
-                    parsed;
-
-                renderAll();
-
-            }
-
-        } catch (error) {
-
-            console.error(
-                "History error:",
-                error
-            );
-
-            messages = [];
-
-        }
     }
 
+}
 
-    // =====================================================
-    // SAVE
-    // =====================================================
 
-    function saveHistory() {
+function saveHistory() {
 
-        try {
+    try {
 
-            const safeMessages =
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(
                 messages
                     .slice(-MAX_HISTORY)
-                    .map(message => {
-
-                        return {
-                            role:
-                                message.role,
-
-                            content:
-                                typeof message.content === "string"
-                                    ? message.content
-                                    : ""
-                        };
-
-                    });
-
-            localStorage.setItem(
-                STORAGE_KEY,
-                JSON.stringify(
-                    safeMessages
-                )
-            );
-
-        } catch (error) {
-
-            console.error(
-                "Save error:",
-                error
-            );
-
-        }
-    }
-
-
-    // =====================================================
-    // SCROLL CONTROL
-    // =====================================================
-
-    function isNearBottom() {
-
-        const distance =
-            chat.scrollHeight -
-            chat.scrollTop -
-            chat.clientHeight;
-
-        return distance < 120;
-    }
-
-
-    function scrollToBottom(force = false) {
-
-        if (
-            force ||
-            isNearBottom()
-        ) {
-
-            chat.scrollTop =
-                chat.scrollHeight;
-
-        }
-    }
-
-
-    // =====================================================
-    // ESCAPE
-    // =====================================================
-
-    function escapeHtml(text) {
-
-        const div =
-            document.createElement(
-                "div"
-            );
-
-        div.textContent =
-            text;
-
-        return div.innerHTML;
-    }
-
-
-    // =====================================================
-    // MARKDOWN
-    // =====================================================
-
-    function renderMarkdown(text) {
-
-        try {
-
-            const html =
-                marked.parse(
-                    text || ""
-                );
-
-            return DOMPurify.sanitize(
-                html
-            );
-
-        } catch {
-
-            return escapeHtml(
-                text || ""
-            );
-
-        }
-    }
-
-
-    // =====================================================
-    // CODE COPY
-    // =====================================================
-
-    function setupCodeButtons(
-        container
-    ) {
-
-        container
-            .querySelectorAll(
-                "pre"
+                    .map(m => ({
+                        role: m.role,
+                        content:
+                            typeof m.content === "string"
+                                ? m.content
+                                : ""
+                    }))
             )
-            .forEach(pre => {
+        );
 
-                if (
-                    pre.parentElement.classList.contains(
-                        "code-wrap"
-                    )
-                ) {
-                    return;
-                }
+    } catch (e) {
 
-                const wrapper =
-                    document.createElement(
-                        "div"
-                    );
-
-                wrapper.className =
-                    "code-wrap";
-
-                pre.parentNode.insertBefore(
-                    wrapper,
-                    pre
-                );
-
-                wrapper.appendChild(
-                    pre
-                );
-
-                const button =
-                    document.createElement(
-                        "button"
-                    );
-
-                button.className =
-                    "copy-code";
-
-                button.textContent =
-                    "کپی";
-
-                button.onclick =
-                    async () => {
-
-                        const code =
-                            pre.innerText;
-
-                        try {
-
-                            await navigator
-                                .clipboard
-                                .writeText(
-                                    code
-                                );
-
-                            button.textContent =
-                                "کپی شد ✓";
-
-                            setTimeout(() => {
-
-                                button.textContent =
-                                    "کپی";
-
-                            }, 1300);
-
-                        } catch {
-
-                            button.textContent =
-                                "خطا";
-
-                        }
-
-                    };
-
-                wrapper.appendChild(
-                    button
-                );
-
-            });
+        console.error(e);
 
     }
 
+}
 
-    // =====================================================
-    // MESSAGE HTML
-    // =====================================================
 
-    function createMessageElement(
-        message
-    ) {
+function loadHistory() {
 
-        const wrapper =
-            document.createElement(
-                "div"
+    try {
+
+        const raw =
+            localStorage.getItem(
+                STORAGE_KEY
             );
 
-        wrapper.className =
-            `message ${message.role}`;
-
-        const avatar =
-            document.createElement(
-                "div"
-            );
-
-        avatar.className =
-            "avatar";
-
-        avatar.textContent =
-            message.role === "user"
-                ? "شما"
-                : "AI";
-
-
-        const body =
-            document.createElement(
-                "div"
-            );
-
-        body.className =
-            "message-body";
-
-
-        const name =
-            document.createElement(
-                "div"
-            );
-
-        name.className =
-            "message-name";
-
-        name.textContent =
-            message.role === "user"
-                ? "شما"
-                : "BEHRAD AI";
-
-
-        const content =
-            document.createElement(
-                "div"
-            );
-
-        content.className =
-            "message-content";
-
-
-        if (
-            message.role === "user"
-        ) {
-
-            content.textContent =
-                message.content || "";
-
-        } else {
-
-            content.innerHTML =
-                renderMarkdown(
-                    message.content || ""
-                );
-
-            setupCodeButtons(
-                content
-            );
-
-        }
-
-
-        body.appendChild(
-            name
-        );
-
-        body.appendChild(
-            content
-        );
-
-        wrapper.appendChild(
-            avatar
-        );
-
-        wrapper.appendChild(
-            body
-        );
-
-        return wrapper;
-    }
-
-
-    // =====================================================
-    // RENDER
-    // =====================================================
-
-    function renderAll() {
-
-        chatInner.innerHTML =
-            "";
-
-        if (
-            messages.length === 0
-        ) {
-
-            chatInner.appendChild(
-                welcome
-            );
-
+        if (!raw) {
             return;
         }
 
+        const data =
+            JSON.parse(raw);
 
-        for (
-            const message of messages
+        if (
+            Array.isArray(data)
         ) {
 
-            const element =
-                createMessageElement(
-                    message
-                );
+            messages =
+                data;
 
-            chatInner.appendChild(
-                element
-            );
+            renderAll();
 
         }
 
-        requestAnimationFrame(
-            () => scrollToBottom(true)
+    } catch (e) {
+
+        console.error(
+            "History:",
+            e
         );
 
-        renderHistory();
+        messages = [];
+
     }
 
+}
 
-    // =====================================================
-    // HISTORY
-    // =====================================================
 
-    function renderHistory() {
+function renderMarkdown(text) {
 
-        historyElement.innerHTML =
-            "";
+    try {
 
-        const userMessages =
-            messages.filter(
-                message =>
-                    message.role === "user"
+        return DOMPurify.sanitize(
+            marked.parse(
+                text || ""
+            )
+        );
+
+    } catch {
+
+        return escapeHtml(
+            text || ""
+        );
+
+    }
+
+}
+
+
+function escapeHtml(text) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+    div.textContent =
+        text;
+
+    return div.innerHTML;
+
+}
+
+
+function setupCodeButtons(container) {
+
+    container
+        .querySelectorAll("pre")
+        .forEach(pre => {
+
+            if (
+                pre.parentElement.classList.contains(
+                    "code-wrap"
+                )
+            ) {
+                return;
+            }
+
+            const wrap =
+                document.createElement(
+                    "div"
+                );
+
+            wrap.className =
+                "code-wrap";
+
+            pre.parentNode.insertBefore(
+                wrap,
+                pre
             );
 
-        userMessages
-            .slice(-12)
-            .forEach(message => {
+            wrap.appendChild(
+                pre
+            );
 
-                const item =
-                    document.createElement(
-                        "div"
-                    );
+            const button =
+                document.createElement(
+                    "button"
+                );
 
-                item.className =
-                    "history-item";
+            button.className =
+                "copy-code";
 
-                item.textContent =
-                    message.content
-                        .replace(
-                            /\s+/g,
-                            " "
-                        )
-                        .slice(
-                            0,
-                            45
+            button.textContent =
+                "کپی";
+
+            button.onclick =
+                async () => {
+
+                    try {
+
+                        await navigator
+                            .clipboard
+                            .writeText(
+                                pre.innerText
+                            );
+
+                        button.textContent =
+                            "کپی شد ✓";
+
+                        setTimeout(
+                            () => {
+                                button.textContent =
+                                    "کپی";
+                            },
+                            1200
                         );
 
-                historyElement.appendChild(
-                    item
-                );
+                    } catch {
 
-            });
+                        button.textContent =
+                            "خطا";
+
+                    }
+
+                };
+
+            wrap.appendChild(
+                button
+            );
+
+        });
+
+}
+
+
+function createMessage(message) {
+
+    const row =
+        document.createElement(
+            "div"
+        );
+
+    row.className =
+        `message ${message.role}`;
+
+    const avatar =
+        document.createElement(
+            "div"
+        );
+
+    avatar.className =
+        "avatar";
+
+    avatar.textContent =
+        message.role === "user"
+            ? "شما"
+            : "AI";
+
+    const body =
+        document.createElement(
+            "div"
+        );
+
+    body.className =
+        "message-body";
+
+    const name =
+        document.createElement(
+            "div"
+        );
+
+    name.className =
+        "message-name";
+
+    name.textContent =
+        message.role === "user"
+            ? "شما"
+            : "BEHRAD AI";
+
+    const content =
+        document.createElement(
+            "div"
+        );
+
+    content.className =
+        "message-content";
+
+    if (
+        message.role === "user"
+    ) {
+
+        content.textContent =
+            message.content || "";
+
+    } else {
+
+        content.innerHTML =
+            renderMarkdown(
+                message.content || ""
+            );
+
+        setupCodeButtons(
+            content
+        );
+
     }
 
+    body.appendChild(name);
+    body.appendChild(content);
 
-    // =====================================================
-    // THINKING
-    // =====================================================
+    row.appendChild(avatar);
+    row.appendChild(body);
 
-    function createThinking() {
+    return row;
 
-        const wrapper =
-            document.createElement(
-                "div"
-            );
-
-        wrapper.className =
-            "message assistant";
-
-        wrapper.id =
-            "thinkingMessage";
+}
 
 
-        const avatar =
-            document.createElement(
-                "div"
-            );
+function renderAll() {
 
-        avatar.className =
-            "avatar";
+    chatInner.innerHTML = "";
 
-        avatar.textContent =
-            "AI";
+    if (
+        messages.length === 0
+    ) {
 
+        chatInner.appendChild(
+            welcome
+        );
 
-        const body =
-            document.createElement(
-                "div"
-            );
+        return;
 
-        body.className =
-            "message-body";
+    }
 
+    messages.forEach(message => {
 
-        const name =
-            document.createElement(
-                "div"
-            );
+        chatInner.appendChild(
+            createMessage(message)
+        );
 
-        name.className =
-            "message-name";
+    });
 
-        name.textContent =
-            "BEHRAD AI";
+    renderHistory();
 
+    requestAnimationFrame(
+        () => scrollBottom(true)
+    );
 
-        const thinking =
-            document.createElement(
-                "div"
-            );
-
-        thinking.className =
-            "thinking";
+}
 
 
-        const wave =
-            document.createElement(
-                "div"
-            );
+function renderHistory() {
 
-        wave.className =
-            "wave";
+    historyElement.innerHTML = "";
 
-        for (
-            let i = 0;
-            i < 5;
-            i++
-        ) {
+    messages
+        .filter(
+            m => m.role === "user"
+        )
+        .slice(-10)
+        .forEach(message => {
 
-            const span =
+            const item =
                 document.createElement(
-                    "span"
+                    "div"
                 );
 
-            wave.appendChild(
-                span
+            item.className =
+                "history-item";
+
+            item.textContent =
+                String(
+                    message.content || ""
+                )
+                .replace(
+                    /\s+/g,
+                    " "
+                )
+                .slice(
+                    0,
+                    50
+                );
+
+            historyElement.appendChild(
+                item
             );
 
-        }
+        });
+
+}
 
 
-        const text =
+function createThinking() {
+
+    const row =
+        document.createElement(
+            "div"
+        );
+
+    row.className =
+        "message assistant";
+
+    row.id =
+        "thinking";
+
+    const avatar =
+        document.createElement(
+            "div"
+        );
+
+    avatar.className =
+        "avatar";
+
+    avatar.textContent =
+        "AI";
+
+    const body =
+        document.createElement(
+            "div"
+        );
+
+    body.className =
+        "message-body";
+
+    const name =
+        document.createElement(
+            "div"
+        );
+
+    name.className =
+        "message-name";
+
+    name.textContent =
+        "BEHRAD AI";
+
+    const thinking =
+        document.createElement(
+            "div"
+        );
+
+    thinking.className =
+        "thinking";
+
+    const wave =
+        document.createElement(
+            "div"
+        );
+
+    wave.className =
+        "wave";
+
+    for (
+        let i = 0;
+        i < 5;
+        i++
+    ) {
+
+        const span =
             document.createElement(
                 "span"
             );
 
-        text.textContent =
-            "در حال فکر کردن و بررسی وب...";
-
-
-        thinking.appendChild(
-            wave
+        wave.appendChild(
+            span
         );
 
-        thinking.appendChild(
-            text
-        );
-
-        body.appendChild(
-            name
-        );
-
-        body.appendChild(
-            thinking
-        );
-
-        wrapper.appendChild(
-            avatar
-        );
-
-        wrapper.appendChild(
-            body
-        );
-
-        return wrapper;
     }
 
-
-    // =====================================================
-    // SMOOTH TYPEWRITER
-    // =====================================================
-
-    function smoothReveal(
-        element,
-        fullText,
-        shouldFollow
-    ) {
-
-        return new Promise(
-            resolve => {
-
-                let index = 0;
-
-                const total =
-                    fullText.length;
-
-
-                function tick() {
-
-                    if (
-                        index >= total
-                    ) {
-
-                        element.innerHTML =
-                            renderMarkdown(
-                                fullText
-                            );
-
-                        setupCodeButtons(
-                            element
-                        );
-
-                        resolve();
-
-                        return;
-                    }
-
-
-                    /*
-                     * تعداد کاراکتر در هر فریم.
-                     * به‌جای یک کاراکتر، چند کاراکتر
-                     * را با هم نشان می‌دهیم تا خیلی
-                     * ریزریز دیده نشود.
-                     */
-
-                    let amount = 4;
-
-                    if (
-                        total > 5000
-                    ) {
-                        amount = 9;
-                    } else if (
-                        total > 2500
-                    ) {
-                        amount = 7;
-                    } else if (
-                        total > 1000
-                    ) {
-                        amount = 5;
-                    }
-
-
-                    index = Math.min(
-                        index + amount,
-                        total
-                    );
-
-
-                    const partial =
-                        fullText.slice(
-                            0,
-                            index
-                        );
-
-
-                    /*
-                     * تا وقتی Markdown ناقص است،
-                     * متن ساده را نمایش می‌دهیم.
-                     * در پایان Markdown کامل رندر می‌شود.
-                     */
-
-                    element.textContent =
-                        partial;
-
-
-                    /*
-                     * فقط اگر کاربر قبلاً پایین بوده،
-                     * اسکرول را همراه جواب حرکت بده.
-                     */
-
-                    if (
-                        shouldFollow()
-                    ) {
-
-                        chat.scrollTop =
-                            chat.scrollHeight;
-
-                    }
-
-
-                    /*
-                     * سرعت نرم.
-                     */
-
-                    const delay =
-                        total > 3000
-                            ? 5
-                            : 8;
-
-                    setTimeout(
-                        tick,
-                        delay
-                    );
-
-                }
-
-
-                tick();
-
-            }
+    const text =
+        document.createElement(
+            "span"
         );
-    }
+
+    text.textContent =
+        "در حال فکر کردن و بررسی وب...";
+
+    thinking.appendChild(wave);
+    thinking.appendChild(text);
+
+    body.appendChild(name);
+    body.appendChild(thinking);
+
+    row.appendChild(avatar);
+    row.appendChild(body);
+
+    return row;
+
+}
 
 
-    // =====================================================
-    // FILE
-    // =====================================================
+function smoothReveal(
+    element,
+    text,
+    follow
+) {
 
-    attachButton.onclick =
-        () => {
+    return new Promise(resolve => {
 
-            fileInput.click();
+        let index = 0;
 
-        };
+        const length =
+            text.length;
 
+        function tick() {
 
-    fileInput.onchange =
-        async () => {
+            if (
+                index >= length
+            ) {
 
-            const file =
-                fileInput.files[0];
+                element.innerHTML =
+                    renderMarkdown(
+                        text
+                    );
 
-            if (!file) {
+                setupCodeButtons(
+                    element
+                );
+
+                resolve();
+
                 return;
             }
 
-            selectedFile =
-                file;
-
-            fileName.textContent =
-                file.name;
-
-            filePreview.style.display =
-                "flex";
-
+            let step = 5;
 
             if (
-                file.type.startsWith(
-                    "image/"
-                )
+                length > 3000
             ) {
+                step = 10;
+            } else if (
+                length > 1500
+            ) {
+                step = 7;
+            }
 
-                const reader =
-                    new FileReader();
-
-                reader.onload =
-                    () => {
-
-                        selectedImageData =
-                            reader.result;
-
-                    };
-
-                reader.readAsDataURL(
-                    file
+            index =
+                Math.min(
+                    index + step,
+                    length
                 );
 
-            } else {
+            element.textContent =
+                text.slice(
+                    0,
+                    index
+                );
 
-                selectedImageData =
-                    null;
+            if (
+                follow &&
+                isNearBottom()
+            ) {
+
+                chat.scrollTop =
+                    chat.scrollHeight;
 
             }
 
-        };
+            setTimeout(
+                tick,
+                6
+            );
+
+        }
+
+        tick();
+
+    });
+
+}
 
 
-    removeFile.onclick =
-        () => {
+attachButton.onclick =
+    () => fileInput.click();
 
-            selectedFile =
-                null;
+
+fileInput.onchange =
+    () => {
+
+        const file =
+            fileInput.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        selectedFile =
+            file;
+
+        fileName.textContent =
+            file.name;
+
+        filePreview.style.display =
+            "flex";
+
+        if (
+            file.type.startsWith(
+                "image/"
+            )
+        ) {
+
+            const reader =
+                new FileReader();
+
+            reader.onload =
+                () => {
+
+                    selectedImageData =
+                        reader.result;
+
+                };
+
+            reader.readAsDataURL(
+                file
+            );
+
+        } else {
 
             selectedImageData =
                 null;
 
-            fileInput.value =
-                "";
+        }
 
-            filePreview.style.display =
-                "none";
+    };
 
+
+removeFile.onclick =
+    () => {
+
+        selectedFile = null;
+        selectedImageData = null;
+
+        fileInput.value = "";
+
+        filePreview.style.display =
+            "none";
+
+    };
+
+
+async function sendMessage() {
+
+    if (generating) {
+        return;
+    }
+
+    const text =
+        input.value.trim();
+
+    if (
+        !text &&
+        !selectedFile
+    ) {
+        return;
+    }
+
+    const follow =
+        isNearBottom();
+
+    generating = true;
+
+    sendButton.disabled = true;
+
+    let displayText =
+        text;
+
+    if (selectedFile) {
+
+        if (displayText) {
+            displayText += "\n\n";
+        }
+
+        displayText +=
+            selectedImageData
+                ? `🖼️ تصویر: ${selectedFile.name}`
+                : `🎬 ویدئو پیوست شد: ${selectedFile.name}`;
+
+    }
+
+    let apiContent =
+        displayText;
+
+    if (selectedImageData) {
+
+        apiContent = [
+            {
+                type: "text",
+                text:
+                    text ||
+                    "این تصویر را بررسی کن."
+            },
+            {
+                type: "image_url",
+                image_url: {
+                    url:
+                        selectedImageData
+                }
+            }
+        ];
+
+    }
+
+    const userMessage = {
+        role: "user",
+        content: displayText,
+        apiContent
+    };
+
+    if (
+        welcome.parentNode
+    ) {
+        welcome.remove();
+    }
+
+    messages.push(
+        userMessage
+    );
+
+    const userElement =
+        createMessage(
+            userMessage
+        );
+
+    chatInner.appendChild(
+        userElement
+    );
+
+    if (
+        selectedImageData
+    ) {
+
+        const img =
+            document.createElement(
+                "img"
+            );
+
+        img.className =
+            "attached-image";
+
+        img.src =
+            selectedImageData;
+
+        userElement
+            .querySelector(
+                ".message-content"
+            )
+            .appendChild(img);
+
+    }
+
+    saveHistory();
+    renderHistory();
+
+    input.value = "";
+    input.style.height = "auto";
+
+    selectedFile = null;
+    selectedImageData = null;
+
+    fileInput.value = "";
+
+    filePreview.style.display =
+        "none";
+
+    const thinking =
+        createThinking();
+
+    chatInner.appendChild(
+        thinking
+    );
+
+    if (follow) {
+        requestAnimationFrame(
+            () => scrollBottom(true)
+        );
+    }
+
+    try {
+
+        const apiMessages =
+            messages
+                .slice(-MAX_HISTORY)
+                .map(message => {
+
+                    return {
+                        role:
+                            message.role,
+
+                        content:
+                            message.apiContent ||
+                            message.content ||
+                            ""
+                    };
+
+                });
+
+        const response =
+            await fetch(
+                API_URL,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            messages:
+                                apiMessages
+                        })
+                }
+            );
+
+        /*
+         * اول متن خام را می‌گیریم.
+         * این جلوی خطای:
+         * Unexpected token <
+         * و خطاهای مشابه را می‌گیرد.
+         */
+
+        const raw =
+            await response.text();
+
+        let data = null;
+
+        try {
+
+            data =
+                JSON.parse(raw);
+
+        } catch {
+
+            console.error(
+                "Raw server response:",
+                raw
+            );
+
+            throw new Error(
+                response.ok
+                    ? "سرور پاسخ JSON معتبر نداد."
+                    : `سرور خطا داد (HTTP ${response.status})`
+            );
+
+        }
+
+        if (
+            !response.ok ||
+            !data.success
+        ) {
+
+            let error =
+                data.error ||
+                `خطای سرور (${response.status})`;
+
+            if (
+                data.details
+            ) {
+
+                console.error(
+                    "Server details:",
+                    data.details
+                );
+
+            }
+
+            throw new Error(
+                error
+            );
+
+        }
+
+        const answer =
+            String(
+                data.reply || ""
+            ).trim();
+
+        if (!answer) {
+
+            throw new Error(
+                "پاسخ خالی از سرور دریافت شد."
+            );
+
+        }
+
+        thinking.remove();
+
+        const assistant =
+            {
+                role: "assistant",
+                content: answer
+            };
+
+        messages.push(
+            assistant
+        );
+
+        const assistantElement =
+            createMessage(
+                assistant
+            );
+
+        chatInner.appendChild(
+            assistantElement
+        );
+
+        const content =
+            assistantElement
+                .querySelector(
+                    ".message-content"
+                );
+
+        await smoothReveal(
+            content,
+            answer,
+            follow
+        );
+
+        saveHistory();
+        renderHistory();
+
+    } catch (error) {
+
+        console.error(
+            "BEHRAD AI ERROR:",
+            error
+        );
+
+        if (
+            thinking.parentNode
+        ) {
+            thinking.remove();
+        }
+
+        const errorMessage = {
+            role: "assistant",
+            content:
+                `❌ ${error.message}`
         };
 
+        messages.push(
+            errorMessage
+        );
 
-    // =====================================================
-    // SEND
-    // =====================================================
+        chatInner.appendChild(
+            createMessage(
+                errorMessage
+            )
+        );
 
-    async function sendMessage() {
+        saveHistory();
+        renderHistory();
+
+    } finally {
+
+        generating = false;
+
+        sendButton.disabled = false;
+
+        input.focus();
+
+    }
+
+}
+
+
+sendButton.onclick =
+    sendMessage;
+
+
+input.addEventListener(
+    "keydown",
+    event => {
+
+        if (
+            event.key === "Enter" &&
+            !event.shiftKey
+        ) {
+
+            event.preventDefault();
+
+            sendMessage();
+
+        }
+
+    }
+);
+
+
+input.addEventListener(
+    "input",
+    () => {
+
+        input.style.height =
+            "auto";
+
+        input.style.height =
+            Math.min(
+                input.scrollHeight,
+                150
+            ) + "px";
+
+    }
+);
+
+
+newChat.onclick =
+    () => {
 
         if (generating) {
             return;
         }
 
-        const text =
-            input.value.trim();
+        messages = [];
 
-
-        if (
-            !text &&
-            !selectedFile
-        ) {
-            return;
-        }
-
-
-        generating =
-            true;
-
-        sendButton.disabled =
-            true;
-
-
-        /*
-         * وضعیت اسکرول قبل از ارسال.
-         */
-
-        const followScroll =
-            isNearBottom();
-
-
-        /*
-         * کاربر
-         */
-
-        let userContent =
-            text;
-
-
-        if (
-            selectedFile
-        ) {
-
-            if (
-                selectedImageData
-            ) {
-
-                if (userContent) {
-                    userContent +=
-                        "\n\n";
-                }
-
-                userContent +=
-                    `🖼️ تصویر: ${selectedFile.name}`;
-
-            } else {
-
-                if (userContent) {
-                    userContent +=
-                        "\n\n";
-                }
-
-                userContent +=
-                    `🎬 ویدئو پیوست شد: ${selectedFile.name}`;
-
-            }
-
-        }
-
-
-        /*
-         * ساخت پیام برای API
-         */
-
-        let apiContent =
-            userContent;
-
-
-        if (
-            selectedImageData
-        ) {
-
-            apiContent = [
-
-                {
-                    type:
-                        "text",
-
-                    text:
-                        text ||
-                        "این تصویر را بررسی کن."
-                },
-
-                {
-                    type:
-                        "image_url",
-
-                    image_url: {
-                        url:
-                            selectedImageData
-                    }
-                }
-
-            ];
-
-        }
-
-
-        const userMessage = {
-
-            role:
-                "user",
-
-            content:
-                userContent,
-
-            apiContent:
-                apiContent
-
-        };
-
-
-        /*
-         * نمایش فوری پیام کاربر
-         */
-
-        if (welcome.parentNode) {
-            welcome.remove();
-        }
-
-
-        messages.push(
-            userMessage
+        localStorage.removeItem(
+            STORAGE_KEY
         );
 
-
-        const userElement =
-            createMessageElement(
-                userMessage
-            );
+        chatInner.innerHTML = "";
 
         chatInner.appendChild(
-            userElement
+            welcome
         );
 
-
-        /*
-         * اگر تصویر بود، preview را هم
-         * داخل پیام نشان بده.
-         */
-
-        if (
-            selectedImageData
-        ) {
-
-            const img =
-                document.createElement(
-                    "img"
-                );
-
-            img.className =
-                "attached-image";
-
-            img.src =
-                selectedImageData;
-
-            userElement
-                .querySelector(
-                    ".message-content"
-                )
-                .appendChild(img);
-
-        }
-
-
-        /*
-         * ذخیره متن ساده
-         */
-
-        saveHistory();
         renderHistory();
 
+        input.focus();
 
-        /*
-         * پاک کردن input
-         */
+    };
 
-        input.value =
-            "";
 
-        input.style.height =
-            "auto";
+loadHistory();
 
-
-        selectedFile =
-            null;
-
-        selectedImageData =
-            null;
-
-        fileInput.value =
-            "";
-
-        filePreview.style.display =
-            "none";
-
-
-        /*
-         * Thinking
-         */
-
-        const thinking =
-            createThinking();
-
-        chatInner.appendChild(
-            thinking
-        );
-
-
-        if (followScroll) {
-
-            requestAnimationFrame(
-                () => scrollToBottom(true)
-            );
-
-        }
-
-
-        try {
-
-            /*
-             * برای API فقط پیام‌های قابل ارسال
-             * را می‌سازیم.
-             */
-
-            const apiMessages =
-                messages
-                    .slice(-MAX_HISTORY)
-                    .map(message => {
-
-                        if (
-                            message.role === "user" &&
-                            message.apiContent
-                        ) {
-
-                            return {
-                                role:
-                                    "user",
-
-                                content:
-                                    message.apiContent
-                            };
-
-                        }
-
-                        return {
-                            role:
-                                message.role,
-
-                            content:
-                                typeof message.content === "string"
-                                    ? message.content
-                                    : ""
-                        };
-
-                    });
-
-
-            const response =
-                await fetch(
-                    API_URL,
-                    {
-                        method:
-                            "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body:
-                            JSON.stringify({
-                                messages:
-                                    apiMessages
-                            })
-                    }
-                );
-
-
-            let data = null;
-
-
-            try {
-
-                data =
-                    await response.json();
-
-            } catch {
-
-                throw new Error(
-                    "سرور پاسخ JSON معتبر نداد."
-                );
-
-            }
-
-
-            if (
-                !response.ok ||
-                !data.success
-            ) {
-
-                let message =
-                    data?.error ||
-                    "OpenRouter خطا داد.";
-
-
-                if (
-                    data?.details
-                ) {
-
-                    console.error(
-                        "OpenRouter details:",
-                        data.details
-                    );
-
-                }
-
-
-                throw new Error(
-                    message
-                );
-
-            }
-
-
-            const answer =
-                String(
-                    data.reply ||
-                    ""
-                ).trim();
-
-
-            if (!answer) {
-
-                throw new Error(
-                    "پاسخ خالی از سرور دریافت شد."
-                );
-
-            }
-
-
-            /*
-             * حذف thinking
-             */
-
-            thinking.remove();
-
-
-            /*
-             * ساخت پیام AI
-             */
-
-            const assistantMessage = {
-
-                role:
-                    "assistant",
-
-                content:
-                    answer
-
-            };
-
-
-            messages.push(
-                assistantMessage
-            );
-
-
-            const assistantElement =
-                createMessageElement({
-                    role:
-                        "assistant",
-
-                    content:
-                        ""
-                });
-
-
-            chatInner.appendChild(
-                assistantElement
-            );
-
-
-            const contentElement =
-                assistantElement.querySelector(
-                    ".message-content"
-                );
-
-
-            /*
-             * نمایش نرم
-             */
-
-            await smoothReveal(
-                contentElement,
-                answer,
-                () =>
-                    followScroll
-            );
-
-
-            /*
-             * ذخیره نهایی
-             */
-
-            saveHistory();
-            renderHistory();
-
-
-        } catch (error) {
-
-            console.error(
-                "BEHRAD AI:",
-                error
-            );
-
-
-            thinking.remove();
-
-
-            const errorMessage = {
-
-                role:
-                    "assistant",
-
-                content:
-                    `❌ ${error.message}`
-
-            };
-
-
-            messages.push(
-                errorMessage
-            );
-
-
-            const errorElement =
-                createMessageElement(
-                    errorMessage
-                );
-
-
-            chatInner.appendChild(
-                errorElement
-            );
-
-
-            saveHistory();
-            renderHistory();
-
-        } finally {
-
-            generating =
-                false;
-
-            sendButton.disabled =
-                false;
-
-            input.focus();
-
-        }
-
-    }
-
-
-    // =====================================================
-    // SEND BUTTON
-    // =====================================================
-
-    sendButton.onclick =
-        sendMessage;
-
-
-    // =====================================================
-    // ENTER
-    // =====================================================
-
-    input.addEventListener(
-        "keydown",
-        event => {
-
-            if (
-                event.key === "Enter" &&
-                !event.shiftKey
-            ) {
-
-                event.preventDefault();
-
-                sendMessage();
-
-            }
-
-        }
-    );
-
-
-    // =====================================================
-    // AUTO RESIZE
-    // =====================================================
-
-    input.addEventListener(
-        "input",
-        () => {
-
-            input.style.height =
-                "auto";
-
-            input.style.height =
-                Math.min(
-                    input.scrollHeight,
-                    180
-                ) + "px";
-
-        }
-    );
-
-
-    // =====================================================
-    // NEW CHAT
-    // =====================================================
-
-    newChat.onclick =
-        () => {
-
-            if (generating) {
-                return;
-            }
-
-            messages =
-                [];
-
-            localStorage.removeItem(
-                STORAGE_KEY
-            );
-
-            chatInner.innerHTML =
-                "";
-
-            chatInner.appendChild(
-                welcome
-            );
-
-            renderHistory();
-
-            input.focus();
-
-        };
-
-
-    // =====================================================
-    // INIT
-    // =====================================================
-
-    loadHistory();
-
-    input.focus();
+input.focus();
 
 </script>
 
