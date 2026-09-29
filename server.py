@@ -1,882 +1,345 @@
 import os
-import uuid
-import time
-from pathlib import Path
-
 import requests
-from flask import Flask, jsonify, request, send_from_directory, abort
-from werkzeug.utils import secure_filename
+from flask import Flask, request, jsonify, send_from_directory
+from werkzeug.exceptions import HTTPException
 
-
-# =========================================================
-# BEHRAD AI SERVER
-# =========================================================
-
-app = Flask(__name__)
-
-BASE_DIR = Path(__file__).resolve().parent
-UPLOAD_DIR = BASE_DIR / "uploads"
-
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
-# حداکثر حجم کل درخواست
-app.config["MAX_CONTENT_LENGTH"] = 55 * 1024 * 1024
-
-OPENROUTER_API_KEY = os.getenv(
-    "OPENROUTER_API_KEY",
-    ""
-).strip()
+app = Flask(__name__, static_folder=".")
 
 MODEL = "stealth/space-bunny-alpha"
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-OPENROUTER_URL = (
-    "https://openrouter.ai/api/v1/chat/completions"
-)
+API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
 
-SITE_URL = "https://k6k83zh1yv.onrender.com"
-
-
-# =========================================================
-# FILE TYPES
-# =========================================================
-
-ALLOWED_IMAGES = {
-    "image/jpeg",
-    "image/jpg",
-    "image/png",
-    "image/webp",
-    "image/gif"
-}
-
-ALLOWED_VIDEOS = {
-    "video/mp4",
-    "video/webm",
-    "video/quicktime",
-    "video/mpeg",
-    "video/x-matroska"
-}
+MAX_HISTORY = 20
 
 
-# =========================================================
-# JSON ERROR HANDLERS
-# =========================================================
-
-@app.errorhandler(413)
-def too_large(error):
-
-    return jsonify({
+def json_error(message, status=500, details=None):
+    data = {
         "success": False,
-        "error": "حجم فایل یا درخواست بیش از حد مجاز است. حداکثر 55MB."
-    }), 413
-
-
-@app.errorhandler(404)
-def not_found(error):
-
-    return jsonify({
-        "success": False,
-        "error": "مسیر موردنظر پیدا نشد."
-    }), 404
-
-
-@app.errorhandler(500)
-def internal_error(error):
-
-    return jsonify({
-        "success": False,
-        "error": "خطای داخلی سرور."
-    }), 500
-
-
-# =========================================================
-# CLEANUP
-# =========================================================
-
-def cleanup_old_uploads():
-
-    now = time.time()
-
-    try:
-
-        for file in UPLOAD_DIR.iterdir():
-
-            if not file.is_file():
-                continue
-
-            try:
-
-                age = now - file.stat().st_mtime
-
-                if age > 30 * 60:
-                    file.unlink(missing_ok=True)
-
-            except Exception:
-                pass
-
-    except Exception:
-        pass
-
-
-# =========================================================
-# HEADERS
-# =========================================================
-
-def openrouter_headers():
-
-    return {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": SITE_URL,
-        "X-Title": "BEHRAD AI"
+        "error": message
     }
 
+    if details:
+        data["details"] = details
 
-# =========================================================
-# HOME
-# =========================================================
+    return jsonify(data), status
+
 
 @app.route("/")
 def home():
+    return send_from_directory(".", "index.html")
 
-    return send_from_directory(
-        BASE_DIR,
-        "index.html"
-    )
-
-
-# =========================================================
-# HEALTH
-# =========================================================
 
 @app.route("/health")
 def health():
-
     return jsonify({
-
-        "success": True,
-
         "status": "ok",
-
         "service": "BEHRAD AI",
-
-        "api_key_configured":
-            bool(OPENROUTER_API_KEY),
-
-        "model": MODEL,
-
-        "features": {
-
-            "image_upload": True,
-
-            "video_upload": True,
-
-            "web_search": True,
-
-            "web_fetch": True,
-
-            "code_copy": True
-
-        }
-
+        "api_key_configured": bool(API_KEY),
+        "model": MODEL
     })
 
 
-# =========================================================
-# UPLOAD
-# =========================================================
+@app.route("/api/test-ai", methods=["GET"])
+def test_ai():
+    if not API_KEY:
+        return json_error("OPENROUTER_API_KEY تنظیم نشده.", 500)
 
-@app.route(
-    "/api/upload",
-    methods=["POST"]
-)
-def upload():
-
-    cleanup_old_uploads()
+    payload = {
+        "model": MODEL,
+        "messages": [
+            {
+                "role": "user",
+                "content": "سلام! فقط کوتاه جواب بده."
+            }
+        ],
+        "temperature": 0.7,
+        "max_tokens": 300
+    }
 
     try:
-
-        if "file" not in request.files:
-
-            return jsonify({
-
-                "success": False,
-
-                "error":
-                    "هیچ فایلی ارسال نشده."
-
-            }), 400
-
-
-        file = request.files["file"]
-
-
-        if not file:
-
-            return jsonify({
-
-                "success": False,
-
-                "error":
-                    "فایل نامعتبر است."
-
-            }), 400
-
-
-        if not file.filename:
-
-            return jsonify({
-
-                "success": False,
-
-                "error":
-                    "نام فایل خالی است."
-
-            }), 400
-
-
-        original_name = file.filename
-
-        content_type = (
-            file.mimetype or ""
-        ).lower()
-
-
-        # -----------------------------------------------
-        # نوع فایل
-        # -----------------------------------------------
-
-        if content_type in ALLOWED_IMAGES:
-
-            media_type = "image"
-
-            max_size = (
-                15 * 1024 * 1024
-            )
-
-        elif content_type in ALLOWED_VIDEOS:
-
-            media_type = "video"
-
-            max_size = (
-                40 * 1024 * 1024
-            )
-
-        else:
-
-            return jsonify({
-
-                "success": False,
-
-                "error":
-                    "فقط عکس و ویدیو پشتیبانی می‌شود."
-
-            }), 400
-
-
-        # -----------------------------------------------
-        # ذخیره موقت
-        # -----------------------------------------------
-
-        safe_name = secure_filename(
-            original_name
-        )
-
-        extension = (
-            Path(safe_name).suffix.lower()
-        )
-
-        if not extension:
-
-            extension = ".bin"
-
-
-        filename = (
-            f"{uuid.uuid4().hex}"
-            f"{extension}"
-        )
-
-        output_path = (
-            UPLOAD_DIR / filename
-        )
-
-
-        file.save(output_path)
-
-
-        if not output_path.exists():
-
-            return jsonify({
-
-                "success": False,
-
-                "error":
-                    "ذخیره فایل انجام نشد."
-
-            }), 500
-
-
-        file_size = (
-            output_path.stat().st_size
-        )
-
-
-        # -----------------------------------------------
-        # حجم
-        # -----------------------------------------------
-
-        if file_size > max_size:
-
-            output_path.unlink(
-                missing_ok=True
-            )
-
-            limit_mb = (
-                max_size //
-                (1024 * 1024)
-            )
-
-            return jsonify({
-
-                "success": False,
-
-                "error":
-                    f"حجم {media_type} بیشتر "
-                    f"از {limit_mb}MB است."
-
-            }), 413
-
-
-        # -----------------------------------------------
-        # URL
-        # -----------------------------------------------
-
-        public_url = (
-            request.host_url.rstrip("/")
-            + "/media/"
-            + filename
-        )
-
-
-        return jsonify({
-
-            "success": True,
-
-            "type": media_type,
-
-            "mime": content_type,
-
-            "name": original_name,
-
-            "size": file_size,
-
-            "url": public_url
-
-        })
-
-
-    except Exception as e:
-
-        return jsonify({
-
-            "success": False,
-
-            "error":
-                f"خطا در آپلود: {str(e)}"
-
-        }), 500
-
-
-# =========================================================
-# MEDIA
-# =========================================================
-
-@app.route(
-    "/media/<filename>"
-)
-def media(filename):
-
-    safe_name = secure_filename(
-        filename
-    )
-
-    if not safe_name:
-
-        abort(404)
-
-
-    path = (
-        UPLOAD_DIR /
-        safe_name
-    )
-
-
-    if not path.exists():
-
-        abort(404)
-
-
-    return send_from_directory(
-        UPLOAD_DIR,
-        safe_name,
-        conditional=True
-    )
-
-
-# =========================================================
-# CHAT
-# =========================================================
-
-@app.route(
-    "/api/chat",
-    methods=["POST"]
-)
-def chat():
-
-    if not OPENROUTER_API_KEY:
-
-        return jsonify({
-
-            "success": False,
-
-            "error":
-                "OPENROUTER_API_KEY is not configured on Render."
-
-        }), 500
-
-
-    try:
-
-        data = request.get_json(
-            silent=True
-        ) or {}
-
-
-        messages = data.get(
-            "messages"
-        )
-
-
-        if not isinstance(
-            messages,
-            list
-        ) or not messages:
-
-            return jsonify({
-
-                "success": False,
-
-                "error":
-                    "messages نامعتبر است."
-
-            }), 400
-
-
-        system_message = {
-
-            "role": "system",
-
-            "content": """
-تو BEHRAD AI هستی.
-
-قوانین:
-
-- پاسخ دقیق، واضح و کاربردی بده.
-- اگر سؤال نیاز به اطلاعات جدید اینترنتی دارد، از web search استفاده کن.
-- اگر کاربر URL داد یا خواست سایت را بررسی کنی، از web fetch استفاده کن.
-- منابع مختلف را در صورت نیاز با هم مقایسه کن.
-- ادعاهای تأییدنشده را قطعی بیان نکن.
-- اگر عکس یا ویدیو دریافت کردی، محتوای آن را بررسی کن.
-- برای برنامه‌نویسی کد کامل و قابل اجرا ارائه کن.
-- کدها را داخل code block قرار بده.
-- chain-of-thought یا reasoning داخلی را نمایش نده.
-"""
-        }
-
-
-        final_messages = [
-            system_message
-        ] + messages
-
-
-        payload = {
-
-            "model": MODEL,
-
-            "messages":
-                final_messages,
-
-            "tools": [
-
-                {
-                    "type":
-                        "openrouter:web_search",
-
-                    "parameters": {
-
-                        "max_results": 6,
-
-                        "max_total_results": 12,
-
-                        "search_context_size":
-                            "medium"
-
-                    }
-
-                },
-
-                {
-                    "type":
-                        "openrouter:web_fetch",
-
-                    "parameters": {
-
-                        "engine":
-                            "openrouter",
-
-                        "max_content_tokens":
-                            30000
-
-                    }
-
-                }
-
-            ],
-
-            "temperature": 0.7,
-
-            "max_tokens": 8000
-
-        }
-
-
         response = requests.post(
-
             OPENROUTER_URL,
-
-            headers=
-                openrouter_headers(),
-
+            headers={
+                "Authorization": f"Bearer {API_KEY}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://k6k83zh1yv.onrender.com",
+                "X-Title": "BEHRAD AI"
+            },
             json=payload,
-
-            timeout=180
-
+            timeout=90
         )
-
 
         try:
-
-            result = response.json()
-
+            data = response.json()
         except Exception:
-
-            return jsonify({
-
-                "success": False,
-
-                "error":
-                    "OpenRouter پاسخ JSON معتبر نداد.",
-
-                "status":
-                    response.status_code,
-
-                "raw":
-                    response.text[:1000]
-
-            }), 502
-
-
-        if response.status_code != 200:
-
-            error_obj = result.get(
-                "error"
+            return json_error(
+                "OpenRouter پاسخ JSON نداد.",
+                response.status_code,
+                response.text[:1000]
             )
 
-            if isinstance(
-                error_obj,
-                dict
-            ):
-
-                error_message = (
-                    error_obj.get(
-                        "message"
-                    )
-                    or
-                    "OpenRouter error"
-                )
-
-            else:
-
-                error_message = (
-                    "OpenRouter request failed."
-                )
-
-
-            return jsonify({
-
-                "success": False,
-
-                "error":
-                    error_message,
-
-                "status":
-                    response.status_code,
-
-                "details":
-                    result
-
-            }), response.status_code
-
-
-        choices = result.get(
-            "choices",
-            []
-        )
-
-
-        if not choices:
-
-            return jsonify({
-
-                "success": False,
-
-                "error":
-                    "OpenRouter پاسخ خالی برگرداند.",
-
-                "details":
-                    result
-
-            }), 502
-
-
-        message = choices[0].get(
-            "message",
-            {}
-        )
-
-
-        answer = message.get(
-            "content"
-        )
-
-
-        if isinstance(
-            answer,
-            list
-        ):
-
-            parts = []
-
-            for item in answer:
-
-                if isinstance(
-                    item,
-                    dict
-                ):
-
-                    if item.get(
-                        "type"
-                    ) == "text":
-
-                        parts.append(
-                            item.get(
-                                "text",
-                                ""
-                            )
-                        )
-
-                    elif "text" in item:
-
-                        parts.append(
-                            item.get(
-                                "text",
-                                ""
-                            )
-                        )
-
-            answer = "\n".join(
-                parts
+        if not response.ok:
+            return json_error(
+                "OpenRouter خطا داد.",
+                response.status_code,
+                data
             )
 
+        answer = ""
 
-        if not answer:
-
+        if data.get("choices"):
             answer = (
-                "پاسخ متنی دریافت نشد."
+                data["choices"][0]
+                .get("message", {})
+                .get("content", "")
             )
-
 
         return jsonify({
-
             "success": True,
-
             "reply": answer,
-
-            "model":
-                result.get(
-                    "model",
-                    MODEL
-                ),
-
-            "usage":
-                result.get(
-                    "usage",
-                    {}
-                )
-
+            "model": MODEL
         })
-
 
     except requests.Timeout:
-
-        return jsonify({
-
-            "success": False,
-
-            "error":
-                "زمان پاسخ تمام شد."
-
-        }), 504
-
+        return json_error("اتصال به OpenRouter timeout شد.", 504)
 
     except requests.RequestException as e:
-
-        return jsonify({
-
-            "success": False,
-
-            "error":
-                f"خطای ارتباطی: {str(e)}"
-
-        }), 502
-
+        return json_error(
+            "اتصال به OpenRouter برقرار نشد.",
+            502,
+            str(e)
+        )
 
     except Exception as e:
-
-        return jsonify({
-
-            "success": False,
-
-            "error":
-                f"Server error: {str(e)}"
-
-        }), 500
+        return json_error(
+            "خطای داخلی سرور.",
+            500,
+            str(e)
+        )
 
 
-# =========================================================
-# TEST
-# =========================================================
-
-@app.route("/api/test-ai")
-def test_ai():
-
-    if not OPENROUTER_API_KEY:
-
-        return jsonify({
-
-            "success": False,
-
-            "error":
-                "OPENROUTER_API_KEY is not configured."
-
-        }), 500
-
+@app.route("/api/chat", methods=["POST"])
+def chat():
+    if not API_KEY:
+        return json_error(
+            "کلید OPENROUTER_API_KEY روی Render تنظیم نشده.",
+            500
+        )
 
     try:
+        body = request.get_json(silent=True)
+
+        if not body:
+            return json_error(
+                "بدنه درخواست JSON نیست.",
+                400
+            )
+
+        messages = body.get("messages")
+
+        if not isinstance(messages, list) or len(messages) == 0:
+            return json_error(
+                "messages خالی یا نامعتبر است.",
+                400
+            )
+
+        # فقط آخرین ۲۰ پیام برای جلوگیری از بزرگ‌شدن بیش از حد درخواست
+        messages = messages[-MAX_HISTORY:]
+
+        clean_messages = []
+
+        for msg in messages:
+            if not isinstance(msg, dict):
+                continue
+
+            role = msg.get("role")
+
+            if role not in ["user", "assistant"]:
+                continue
+
+            content = msg.get("content")
+
+            if isinstance(content, str):
+                if content.strip():
+                    clean_messages.append({
+                        "role": role,
+                        "content": content
+                    })
+
+            elif isinstance(content, list):
+                valid_parts = []
+
+                for part in content:
+                    if not isinstance(part, dict):
+                        continue
+
+                    part_type = part.get("type")
+
+                    if part_type == "text":
+                        text = part.get("text", "")
+
+                        if isinstance(text, str) and text.strip():
+                            valid_parts.append({
+                                "type": "text",
+                                "text": text
+                            })
+
+                    elif part_type == "image_url":
+                        image_url = part.get("image_url", {})
+
+                        if isinstance(image_url, dict):
+                            url = image_url.get("url", "")
+
+                            if isinstance(url, str) and url:
+                                valid_parts.append({
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": url
+                                    }
+                                })
+
+                    elif part_type == "video_url":
+                        video_url = part.get("video_url", {})
+
+                        if isinstance(video_url, dict):
+                            url = video_url.get("url", "")
+
+                            if isinstance(url, str) and url:
+                                valid_parts.append({
+                                    "type": "video_url",
+                                    "video_url": {
+                                        "url": url
+                                    }
+                                })
+
+                if valid_parts:
+                    clean_messages.append({
+                        "role": role,
+                        "content": valid_parts
+                    })
+
+        if not clean_messages:
+            return json_error(
+                "هیچ پیام قابل پردازشی پیدا نشد.",
+                400
+            )
 
         payload = {
-
             "model": MODEL,
+            "messages": clean_messages,
+            "temperature": 0.7,
+            "max_tokens": 4000,
 
-            "messages": [
-
+            # ابزارهای وب اختیاری‌اند و سمت OpenRouter اجرا می‌شوند.
+            "tools": [
                 {
-
-                    "role": "user",
-
-                    "content":
-                        "سلام! فقط بگو BEHRAD AI آنلاین است."
-
+                    "type": "openrouter:web_search"
+                },
+                {
+                    "type": "openrouter:web_fetch"
                 }
-
             ]
-
         }
 
-
         response = requests.post(
-
             OPENROUTER_URL,
-
-            headers=
-                openrouter_headers(),
-
+            headers={
+                "Authorization": f"Bearer {API_KEY}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://k6k83zh1yv.onrender.com",
+                "X-Title": "BEHRAD AI"
+            },
             json=payload,
-
-            timeout=60
-
+            timeout=120
         )
 
-
-        result = response.json()
-
-
-        answer = (
-            result
-            .get(
-                "choices",
-                [{}]
-            )[0]
-            .get(
-                "message",
-                {}
+        # تلاش برای JSON
+        try:
+            data = response.json()
+        except Exception:
+            return json_error(
+                f"OpenRouter پاسخ قابل‌خواندن نداد. HTTP {response.status_code}",
+                response.status_code,
+                response.text[:1500]
             )
-            .get(
-                "content"
-            )
-        )
 
+        if not response.ok:
+            return json_error(
+                f"OpenRouter خطا داد. HTTP {response.status_code}",
+                response.status_code,
+                data
+            )
+
+        choices = data.get("choices", [])
+
+        if not choices:
+            return json_error(
+                "OpenRouter هیچ پاسخی برنگرداند.",
+                502,
+                data
+            )
+
+        message = choices[0].get("message", {})
+
+        answer = message.get("content")
+
+        # بعضی مدل‌ها ممکن است content را None برگردانند
+        if answer is None:
+            answer = ""
+
+        if not isinstance(answer, str):
+            answer = str(answer)
+
+        if not answer.strip():
+            answer = "مدل پاسخی متنی برنگرداند."
 
         return jsonify({
-
-            "success":
-                response.status_code == 200,
-
-            "openrouter_status":
-                response.status_code,
-
-            "model":
-                MODEL,
-
-            "پاسخ":
-                answer
-
+            "success": True,
+            "reply": answer,
+            "model": MODEL
         })
 
+    except requests.Timeout:
+        return json_error(
+            "زمان پاسخ OpenRouter تمام شد. دوباره امتحان کن.",
+            504
+        )
+
+    except requests.RequestException as e:
+        return json_error(
+            "ارتباط با OpenRouter برقرار نشد.",
+            502,
+            str(e)
+        )
 
     except Exception as e:
-
-        return jsonify({
-
-            "success": False,
-
-            "error":
-                str(e)
-
-        }), 500
+        return json_error(
+            "خطای داخلی در /api/chat",
+            500,
+            str(e)
+        )
 
 
-# =========================================================
-# START
-# =========================================================
+@app.errorhandler(HTTPException)
+def handle_http_error(error):
+    return json_error(
+        error.description,
+        error.code or 500
+    )
+
+
+@app.errorhandler(Exception)
+def handle_unknown_error(error):
+    return json_error(
+        "خطای غیرمنتظره سرور.",
+        500,
+        str(error)
+    )
+
 
 if __name__ == "__main__":
-
-    port = int(
-        os.getenv(
-            "PORT",
-            "10000"
-        )
-    )
+    port = int(os.environ.get("PORT", 5000))
 
     app.run(
         host="0.0.0.0",
