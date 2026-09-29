@@ -1,7 +1,8 @@
 import os
+import json
 import requests
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 from werkzeug.exceptions import HTTPException
 
 
@@ -9,69 +10,74 @@ app = Flask(__name__, static_folder=".")
 
 
 # =========================================================
-# BEHRAD AI CONFIG
+# CONFIG
 # =========================================================
 
 MODEL = "stealth/space-bunny-alpha"
 
-OPENROUTER_URL = (
-    "https://openrouter.ai/api/v1/chat/completions"
-)
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-API_KEY = os.getenv(
-    "OPENROUTER_API_KEY",
-    ""
-).strip()
+API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
 
-MAX_HISTORY = 20
+MAX_HISTORY = 12
+MAX_MESSAGE_CHARS = 12000
+MAX_TOTAL_CHARS = 45000
 
 
 # =========================================================
-# BEHRAD AI IDENTITY
+# SYSTEM PROMPT
 # =========================================================
 
 SYSTEM_PROMPT = """
 تو BEHRAD AI هستی؛ دستیار هوش مصنوعی پروژه BEHRAD AI.
 
-هویت پروژه:
-- نام پروژه: BEHRAD AI
-- سازنده و مالک پروژه: بهراد محمدی
-- نام مستعار و برند سازنده: بهراد ام پلیر
-- نام انگلیسی برند: BEHRAD M PLAYER
-- در صورت سؤال درباره سازنده، مالک یا خالق BEHRAD AI، پاسخ بده:
-  «سازنده و مالک BEHRAD AI، بهراد محمدی، ملقب به بهراد ام پلیر (BEHRAD M PLAYER) است.»
+اطلاعات هویتی پروژه:
 
-قوانین هویتی:
-- سازنده و مالک را با شخص دیگری اشتباه نگیر.
-- اگر کاربر پرسید «تو رو کی ساخته؟»، درباره BEHRAD AI بگو سازنده‌ات بهراد محمدی ملقب به بهراد ام پلیر است.
-- اگر کاربر پرسید «مال کی هستی؟»، بگو BEHRAD AI متعلق به بهراد محمدی ملقب به بهراد ام پلیر است.
-- این اطلاعات را فقط به عنوان اطلاعات هویتی پروژه استفاده کن.
-- درباره چیزهایی که نمی‌دانی، حدس نزن.
+صاحب BEHRAD AI:
+بهراد محمدی
 
-رفتار:
-- فارسی را روان و طبیعی جواب بده.
-- اگر کاربر فارسی حرف زد، فارسی جواب بده.
-- در کدنویسی، کد کامل و قابل استفاده ارائه کن.
-- اگر مطمئن نیستی، صادقانه بگو.
-- پاسخ‌ها را واضح و کاربردی بده.
+مالک BEHRAD AI:
+بهراد محمدی
+
+سازنده BEHRAD AI:
+بهراد محمدی
+
+نام مستعار و برند:
+بهراد ام پلیر (BEHRAD M PLAYER)
+
+اگر کاربر درباره صاحب، مالک یا سازنده BEHRAD AI پرسید،
+بگو که صاحب، مالک و سازنده این پروژه «بهراد محمدی»،
+ملقب به «بهراد ام پلیر (BEHRAD M PLAYER)» است.
+
+به زبان کاربر پاسخ بده.
+
+اگر برای پاسخ به اطلاعات جدید اینترنت نیاز داری،
+از ابزار جستجوی وب استفاده کن.
+
+اگر جستجوی وب انجام دادی، اطلاعات پیدا شده را با پاسخ خودت ترکیب کن
+و منابع را تا حد امکان واضح معرفی کن.
+
+پاسخ‌ها باید طبیعی، دقیق و مفید باشند.
+
+اگر چیزی را نمی‌دانی، حدس بی‌دلیل نزن.
 """
 
 
 # =========================================================
-# JSON ERROR
+# ERROR JSON
 # =========================================================
 
-def json_error(message, status=500, details=None):
+def error_json(message, status=500, details=None):
 
-    data = {
+    result = {
         "success": False,
         "error": message
     }
 
     if details:
-        data["details"] = details
+        result["details"] = details
 
-    return jsonify(data), status
+    return jsonify(result), status
 
 
 # =========================================================
@@ -80,11 +86,7 @@ def json_error(message, status=500, details=None):
 
 @app.route("/")
 def home():
-
-    return send_from_directory(
-        ".",
-        "index.html"
-    )
+    return send_from_directory(".", "index.html")
 
 
 # =========================================================
@@ -99,517 +101,703 @@ def health():
         "service": "BEHRAD AI",
         "status": "ok",
         "api_key_configured": bool(API_KEY),
-        "model": MODEL
+        "model": MODEL,
+        "streaming": True,
+        "web_search": True
     })
 
 
 # =========================================================
-# OPENROUTER
+# TEXT CLEANER
 # =========================================================
 
-def ask_openrouter(messages):
+def clean_text(text):
 
-    payload = {
-        "model": MODEL,
+    if not isinstance(text, str):
+        return ""
 
-        "messages": messages,
+    text = text.strip()
 
-        "temperature": 0.7,
+    if len(text) > MAX_MESSAGE_CHARS:
+        text = text[:MAX_MESSAGE_CHARS]
 
-        "max_tokens": 4000
+    return text
+
+
+# =========================================================
+# CLEAN MESSAGES
+# =========================================================
+
+def clean_messages(messages):
+
+    if not isinstance(messages, list):
+        return []
+
+    messages = messages[-MAX_HISTORY:]
+
+    cleaned = []
+
+    total_chars = 0
+
+    for message in messages:
+
+        if not isinstance(message, dict):
+            continue
+
+        role = message.get("role")
+
+        if role not in ("user", "assistant"):
+            continue
+
+        content = message.get("content")
+
+
+        # -----------------------------------------
+        # TEXT
+        # -----------------------------------------
+
+        if isinstance(content, str):
+
+            content = clean_text(content)
+
+            if not content:
+                continue
+
+            remaining = MAX_TOTAL_CHARS - total_chars
+
+            if remaining <= 0:
+                break
+
+            if len(content) > remaining:
+                content = content[:remaining]
+
+            cleaned.append({
+                "role": role,
+                "content": content
+            })
+
+            total_chars += len(content)
+
+            continue
+
+
+        # -----------------------------------------
+        # MULTIMODAL
+        # -----------------------------------------
+
+        if isinstance(content, list):
+
+            parts = []
+
+            for part in content:
+
+                if not isinstance(part, dict):
+                    continue
+
+                part_type = part.get("type")
+
+
+                # TEXT PART
+                if part_type == "text":
+
+                    text = clean_text(
+                        part.get("text", "")
+                    )
+
+                    if not text:
+                        continue
+
+                    remaining = MAX_TOTAL_CHARS - total_chars
+
+                    if remaining <= 0:
+                        break
+
+                    if len(text) > remaining:
+                        text = text[:remaining]
+
+                    parts.append({
+                        "type": "text",
+                        "text": text
+                    })
+
+                    total_chars += len(text)
+
+
+                # IMAGE
+                elif part_type == "image_url":
+
+                    image_url = part.get("image_url")
+
+                    if isinstance(image_url, dict):
+
+                        url = image_url.get("url")
+
+                        if isinstance(url, str) and url:
+
+                            parts.append({
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": url
+                                }
+                            })
+
+
+                # VIDEO
+                elif part_type == "video_url":
+
+                    video_url = part.get("video_url")
+
+                    if isinstance(video_url, dict):
+
+                        url = video_url.get("url")
+
+                        if isinstance(url, str) and url:
+
+                            parts.append({
+                                "type": "video_url",
+                                "video_url": {
+                                    "url": url
+                                }
+                            })
+
+
+            if parts:
+
+                cleaned.append({
+                    "role": role,
+                    "content": parts
+                })
+
+
+    return cleaned
+
+
+# =========================================================
+# OPENROUTER HEADERS
+# =========================================================
+
+def openrouter_headers():
+
+    return {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://k6k83zh1yv.onrender.com",
+        "X-Title": "BEHRAD AI"
     }
 
-    response = requests.post(
 
-        OPENROUTER_URL,
+# =========================================================
+# NORMAL CHAT
+# =========================================================
 
-        headers={
-            "Authorization": f"Bearer {API_KEY}",
-
-            "Content-Type":
-                "application/json",
-
-            "HTTP-Referer":
-                "https://k6k83zh1yv.onrender.com",
-
-            "X-Title":
-                "BEHRAD AI"
-        },
-
-        json=payload,
-
-        timeout=120
-    )
-
+@app.route("/api/chat", methods=["POST"])
+def chat():
 
     try:
 
-        data = response.json()
+        if not API_KEY:
+            return error_json(
+                "OPENROUTER_API_KEY روی Render تنظیم نشده.",
+                500
+            )
 
-    except Exception:
 
-        return (
-            None,
-            response.status_code,
-            response.text[:2000]
+        body = request.get_json(silent=True)
+
+        if not body:
+            return error_json(
+                "درخواست JSON معتبر نیست.",
+                400
+            )
+
+
+        messages = body.get("messages")
+
+        clean = clean_messages(messages)
+
+        if not clean:
+
+            return error_json(
+                "پیامی برای ارسال وجود ندارد.",
+                400
+            )
+
+
+        final_messages = [
+            {
+                "role": "system",
+                "content": SYSTEM_PROMPT
+            }
+        ]
+
+        final_messages.extend(clean)
+
+
+        payload = {
+            "model": MODEL,
+            "messages": final_messages,
+            "temperature": 0.7,
+            "max_tokens": 3000
+        }
+
+
+        response = requests.post(
+            OPENROUTER_URL,
+            headers=openrouter_headers(),
+            json=payload,
+            timeout=120
         )
 
 
-    return (
-        data,
-        response.status_code,
-        None
-    )
+        try:
+            data = response.json()
+
+        except Exception:
+
+            return error_json(
+                "OpenRouter پاسخ JSON معتبر نداد.",
+                502,
+                response.text[:3000]
+            )
+
+
+        if response.status_code >= 400:
+
+            return error_json(
+                "OpenRouter درخواست را قبول نکرد.",
+                502,
+                data
+            )
+
+
+        choices = data.get("choices", [])
+
+        if not choices:
+
+            return error_json(
+                "مدل پاسخی برنگرداند.",
+                502,
+                data
+            )
+
+
+        answer = choices[0].get(
+            "message",
+            {}
+        ).get(
+            "content",
+            ""
+        )
+
+
+        if not answer:
+
+            return error_json(
+                "مدل پاسخ متنی برنگرداند.",
+                502
+            )
+
+
+        return jsonify({
+            "success": True,
+            "reply": answer,
+            "model": MODEL
+        })
+
+
+    except requests.Timeout:
+
+        return error_json(
+            "زمان پاسخ مدل تمام شد.",
+            504
+        )
+
+
+    except requests.RequestException as e:
+
+        return error_json(
+            "ارتباط با OpenRouter برقرار نشد.",
+            502,
+            str(e)
+        )
+
+
+    except Exception as e:
+
+        return error_json(
+            "خطای داخلی سرور.",
+            500,
+            str(e)
+        )
 
 
 # =========================================================
-# CHAT
+# STREAMING CHAT
 # =========================================================
 
-@app.route(
-    "/api/chat",
-    methods=["POST"]
-)
-def chat():
+@app.route("/api/chat/stream", methods=["POST"])
+def chat_stream():
 
     if not API_KEY:
 
-        return json_error(
-            "OPENROUTER_API_KEY تنظیم نشده.",
+        return error_json(
+            "OPENROUTER_API_KEY روی Render تنظیم نشده.",
             500
         )
 
 
     try:
 
-        body = request.get_json(
-            silent=True
-        )
-
+        body = request.get_json(silent=True)
 
         if not body:
 
-            return json_error(
+            return error_json(
                 "درخواست JSON معتبر نیست.",
                 400
             )
 
 
-        incoming_messages = body.get(
-            "messages"
-        )
+        messages = body.get("messages")
 
+        clean = clean_messages(messages)
 
-        if not isinstance(
-            incoming_messages,
-            list
-        ):
+        if not clean:
 
-            return json_error(
-                "messages نامعتبر است.",
+            return error_json(
+                "پیامی برای ارسال وجود ندارد.",
                 400
             )
 
 
-        incoming_messages = (
-            incoming_messages[-MAX_HISTORY:]
-        )
+        final_messages = [
+            {
+                "role": "system",
+                "content": SYSTEM_PROMPT
+            }
+        ]
 
-
-        clean_messages = []
-
-
-        # =================================================
-        # SYSTEM PROMPT
-        # =================================================
-
-        clean_messages.append({
-
-            "role": "system",
-
-            "content": SYSTEM_PROMPT
-
-        })
+        final_messages.extend(clean)
 
 
         # =================================================
-        # USER / ASSISTANT MESSAGES
+        # OPENROUTER PAYLOAD
         # =================================================
 
-        for message in incoming_messages:
+        payload = {
+            "model": MODEL,
+            "messages": final_messages,
 
-            if not isinstance(
-                message,
-                dict
-            ):
-                continue
+            # REAL STREAMING
+            "stream": True,
 
+            "temperature": 0.7,
+            "max_tokens": 3000,
 
-            role = message.get(
-                "role"
-            )
-
-
-            if role not in (
-                "user",
-                "assistant"
-            ):
-                continue
+            # Web Search
+            "tools": [
+                {
+                    "type": "openrouter:web_search"
+                }
+            ]
+        }
 
 
-            content = message.get(
-                "content"
-            )
+        @stream_with_context
+        def generate():
+
+            try:
+
+                response = requests.post(
+                    OPENROUTER_URL,
+                    headers=openrouter_headers(),
+                    json=payload,
+                    stream=True,
+                    timeout=(20, 180)
+                )
 
 
-            # ---------------------------------------------
-            # TEXT
-            # ---------------------------------------------
+                # -----------------------------------------
+                # OPENROUTER ERROR
+                # -----------------------------------------
 
-            if isinstance(
-                content,
-                str
-            ):
+                if response.status_code >= 400:
 
-                if content.strip():
+                    try:
 
-                    clean_messages.append({
+                        error_data = response.json()
 
-                        "role": role,
+                        message = "OpenRouter خطا داد."
 
-                        "content": content
+                        if isinstance(error_data, dict):
 
-                    })
+                            error_obj = error_data.get(
+                                "error"
+                            )
 
-                continue
+                            if isinstance(
+                                error_obj,
+                                dict
+                            ):
+
+                                message = error_obj.get(
+                                    "message",
+                                    message
+                                )
+
+                            elif isinstance(
+                                error_obj,
+                                str
+                            ):
+
+                                message = error_obj
+
+                    except Exception:
+
+                        message = response.text[:1000]
 
 
-            # ---------------------------------------------
-            # MULTIMODAL
-            # ---------------------------------------------
+                    yield (
+                        "data: "
+                        + json.dumps(
+                            {
+                                "type": "error",
+                                "message": message
+                            },
+                            ensure_ascii=False
+                        )
+                        + "\n\n"
+                    )
 
-            if isinstance(
-                content,
-                list
-            ):
-
-                parts = []
+                    return
 
 
-                for part in content:
+                # -----------------------------------------
+                # STREAM
+                # -----------------------------------------
 
-                    if not isinstance(
-                        part,
-                        dict
-                    ):
+                for line in response.iter_lines(
+                    decode_unicode=True
+                ):
+
+                    if not line:
                         continue
 
 
-                    part_type = part.get(
-                        "type"
+                    if line.startswith("data:"):
+
+                        raw = line[
+                            5:
+                        ].strip()
+
+
+                        if raw == "[DONE]":
+
+                            yield (
+                                "data: "
+                                + json.dumps(
+                                    {
+                                        "type": "done"
+                                    },
+                                    ensure_ascii=False
+                                )
+                                + "\n\n"
+                            )
+
+                            break
+
+
+                        try:
+
+                            chunk = json.loads(raw)
+
+                        except Exception:
+
+                            continue
+
+
+                        # ---------------------------------
+                        # CONTENT
+                        # ---------------------------------
+
+                        choices = chunk.get(
+                            "choices",
+                            []
+                        )
+
+
+                        if choices:
+
+                            delta = choices[0].get(
+                                "delta",
+                                {}
+                            )
+
+
+                            content = delta.get(
+                                "content"
+                            )
+
+
+                            if content:
+
+                                yield (
+                                    "data: "
+                                    + json.dumps(
+                                        {
+                                            "type": "content",
+                                            "text": content
+                                        },
+                                        ensure_ascii=False
+                                    )
+                                    + "\n\n"
+                                )
+
+
+                            # ---------------------------------
+                            # TOOL CALL / SEARCH
+                            # ---------------------------------
+
+                            tool_calls = delta.get(
+                                "tool_calls"
+                            )
+
+
+                            if tool_calls:
+
+                                for tool in tool_calls:
+
+                                    function = tool.get(
+                                        "function",
+                                        {}
+                                    )
+
+                                    tool_name = function.get(
+                                        "name",
+                                        ""
+                                    )
+
+                                    arguments = function.get(
+                                        "arguments",
+                                        ""
+                                    )
+
+
+                                    if tool_name:
+
+                                        yield (
+                                            "data: "
+                                            + json.dumps(
+                                                {
+                                                    "type": "search",
+                                                    "name": tool_name,
+                                                    "arguments": arguments
+                                                },
+                                                ensure_ascii=False
+                                            )
+                                            + "\n\n"
+                                        )
+
+
+                yield (
+                    "data: "
+                    + json.dumps(
+                        {
+                            "type": "done"
+                        },
+                        ensure_ascii=False
                     )
+                    + "\n\n"
+                )
 
 
-                    # TEXT
-                    if part_type == "text":
+            except requests.Timeout:
 
-                        text = part.get(
-                            "text",
-                            ""
-                        )
-
-
-                        if text:
-
-                            parts.append({
-
-                                "type":
-                                    "text",
-
-                                "text":
-                                    text
-
-                            })
+                yield (
+                    "data: "
+                    + json.dumps(
+                        {
+                            "type": "error",
+                            "message": "زمان پاسخ مدل تمام شد."
+                        },
+                        ensure_ascii=False
+                    )
+                    + "\n\n"
+                )
 
 
-                    # IMAGE
-                    elif part_type == "image_url":
+            except requests.RequestException as e:
 
-                        image_url = part.get(
-                            "image_url"
-                        )
-
-
-                        if isinstance(
-                            image_url,
-                            dict
-                        ):
-
-                            url = image_url.get(
-                                "url"
-                            )
+                yield (
+                    "data: "
+                    + json.dumps(
+                        {
+                            "type": "error",
+                            "message": "ارتباط با OpenRouter قطع شد.",
+                            "details": str(e)
+                        },
+                        ensure_ascii=False
+                    )
+                    + "\n\n"
+                )
 
 
-                            if (
-                                isinstance(
-                                    url,
-                                    str
-                                )
-                                and url
-                            ):
+            except Exception as e:
 
-                                parts.append({
-
-                                    "type":
-                                        "image_url",
-
-                                    "image_url": {
-
-                                        "url":
-                                            url
-
-                                    }
-
-                                })
+                yield (
+                    "data: "
+                    + json.dumps(
+                        {
+                            "type": "error",
+                            "message": "خطای Streaming سرور.",
+                            "details": str(e)
+                        },
+                        ensure_ascii=False
+                    )
+                    + "\n\n"
+                )
 
 
-                    # VIDEO
-                    elif part_type == "video_url":
-
-                        video_url = part.get(
-                            "video_url"
-                        )
-
-
-                        if isinstance(
-                            video_url,
-                            dict
-                        ):
-
-                            url = video_url.get(
-                                "url"
-                            )
-
-
-                            if (
-                                isinstance(
-                                    url,
-                                    str
-                                )
-                                and url
-                            ):
-
-                                parts.append({
-
-                                    "type":
-                                        "video_url",
-
-                                    "video_url": {
-
-                                        "url":
-                                            url
-
-                                    }
-
-                                })
-
-
-                if parts:
-
-                    clean_messages.append({
-
-                        "role":
-                            role,
-
-                        "content":
-                            parts
-
-                    })
-
-
-        # =================================================
-        # EMPTY
-        # =================================================
-
-        if len(clean_messages) <= 1:
-
-            return json_error(
-                "هیچ پیام قابل پردازشی وجود ندارد.",
-                400
-            )
-
-
-        # =================================================
-        # ASK AI
-        # =================================================
-
-        data, status, raw = ask_openrouter(
-            clean_messages
+        return Response(
+            generate(),
+            mimetype="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+                "Connection": "keep-alive"
+            }
         )
 
 
-        if data is None:
+    except Exception as e:
 
-            return json_error(
-
-                "OpenRouter پاسخ JSON نداد.",
-
-                status,
-
-                raw
-
-            )
-
-
-        if status >= 400:
-
-            return json_error(
-
-                "OpenRouter درخواست را قبول نکرد.",
-
-                status,
-
-                data
-
-            )
-
-
-        choices = data.get(
-            "choices",
-            []
-        )
-
-
-        if not choices:
-
-            return json_error(
-
-                "مدل پاسخی برنگرداند.",
-
-                502,
-
-                data
-
-            )
-
-
-        message = choices[0].get(
-            "message",
-            {}
-        )
-
-
-        answer = message.get(
-            "content"
-        )
-
-
-        if answer is None:
-
-            answer = ""
-
-
-        if not isinstance(
-            answer,
-            str
-        ):
-
-            answer = str(answer)
-
-
-        if not answer.strip():
-
-            answer = (
-                "مدل پاسخ متنی برنگرداند."
-            )
-
-
-        return jsonify({
-
-            "success":
-                True,
-
-            "reply":
-                answer,
-
-            "model":
-                MODEL
-
-        })
-
-
-    except requests.Timeout:
-
-        return json_error(
-
-            "زمان پاسخ مدل تمام شد. دوباره امتحان کن.",
-
-            504
-
-        )
-
-
-    except requests.RequestException as error:
-
-        return json_error(
-
-            "ارتباط با OpenRouter برقرار نشد.",
-
-            502,
-
-            str(error)
-
-        )
-
-
-    except Exception as error:
-
-        return json_error(
-
-            "خطای داخلی سرور.",
-
+        return error_json(
+            "خطای شروع Streaming.",
             500,
-
-            str(error)
-
+            str(e)
         )
 
 
 # =========================================================
-# HTTP ERROR
+# FLASK ERRORS
 # =========================================================
 
-@app.errorhandler(
-    HTTPException
-)
+@app.errorhandler(HTTPException)
 def http_error(error):
 
-    return json_error(
-
+    return error_json(
         error.description,
-
         error.code or 500
-
     )
 
 
-# =========================================================
-# UNKNOWN ERROR
-# =========================================================
-
-@app.errorhandler(
-    Exception
-)
+@app.errorhandler(Exception)
 def unknown_error(error):
 
-    return json_error(
-
+    return error_json(
         "خطای غیرمنتظره سرور.",
-
         500,
-
         str(error)
-
     )
 
 
@@ -626,13 +814,8 @@ if __name__ == "__main__":
         )
     )
 
-
     app.run(
-
         host="0.0.0.0",
-
         port=port,
-
         debug=False
-
-    )
+                )
