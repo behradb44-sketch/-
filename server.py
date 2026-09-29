@@ -33,51 +33,49 @@ SYSTEM_PROMPT = """
 
 اطلاعات هویتی پروژه:
 
-صاحب BEHRAD AI:
+صاحب:
 بهراد محمدی
 
-مالک BEHRAD AI:
+مالک:
 بهراد محمدی
 
-سازنده BEHRAD AI:
+سازنده:
 بهراد محمدی
 
 نام مستعار و برند:
 بهراد ام پلیر (BEHRAD M PLAYER)
 
 اگر کاربر درباره صاحب، مالک یا سازنده BEHRAD AI پرسید،
-بگو که صاحب، مالک و سازنده این پروژه «بهراد محمدی»،
-ملقب به «بهراد ام پلیر (BEHRAD M PLAYER)» است.
+بگو صاحب، مالک و سازنده BEHRAD AI، بهراد محمدی
+ملقب به بهراد ام پلیر (BEHRAD M PLAYER) است.
 
 به زبان کاربر پاسخ بده.
 
-اگر برای پاسخ به اطلاعات جدید اینترنت نیاز داری،
-از ابزار جستجوی وب استفاده کن.
+اگر سؤال نیاز به اطلاعات جدید یا اینترنتی دارد،
+از Web Search استفاده کن.
 
-اگر جستجوی وب انجام دادی، اطلاعات پیدا شده را با پاسخ خودت ترکیب کن
-و منابع را تا حد امکان واضح معرفی کن.
+اگر جستجو انجام شد، اطلاعات جستجو را در پاسخ نهایی لحاظ کن.
 
-پاسخ‌ها باید طبیعی، دقیق و مفید باشند.
-
+پاسخ‌ها طبیعی، دقیق و مفید باشند.
 اگر چیزی را نمی‌دانی، حدس بی‌دلیل نزن.
 """
 
 
 # =========================================================
-# ERROR JSON
+# ERROR
 # =========================================================
 
 def error_json(message, status=500, details=None):
 
-    result = {
+    data = {
         "success": False,
         "error": message
     }
 
     if details:
-        result["details"] = details
+        data["details"] = details
 
-    return jsonify(result), status
+    return jsonify(data), status
 
 
 # =========================================================
@@ -86,7 +84,11 @@ def error_json(message, status=500, details=None):
 
 @app.route("/")
 def home():
-    return send_from_directory(".", "index.html")
+
+    return send_from_directory(
+        ".",
+        "index.html"
+    )
 
 
 # =========================================================
@@ -108,7 +110,7 @@ def health():
 
 
 # =========================================================
-# TEXT CLEANER
+# CLEAN TEXT
 # =========================================================
 
 def clean_text(text):
@@ -152,9 +154,9 @@ def clean_messages(messages):
         content = message.get("content")
 
 
-        # -----------------------------------------
+        # =============================================
         # TEXT
-        # -----------------------------------------
+        # =============================================
 
         if isinstance(content, str):
 
@@ -163,13 +165,15 @@ def clean_messages(messages):
             if not content:
                 continue
 
-            remaining = MAX_TOTAL_CHARS - total_chars
+            remaining = (
+                MAX_TOTAL_CHARS -
+                total_chars
+            )
 
             if remaining <= 0:
                 break
 
-            if len(content) > remaining:
-                content = content[:remaining]
+            content = content[:remaining]
 
             cleaned.append({
                 "role": role,
@@ -181,9 +185,9 @@ def clean_messages(messages):
             continue
 
 
-        # -----------------------------------------
+        # =============================================
         # MULTIMODAL
-        # -----------------------------------------
+        # =============================================
 
         if isinstance(content, list):
 
@@ -197,7 +201,7 @@ def clean_messages(messages):
                 part_type = part.get("type")
 
 
-                # TEXT PART
+                # TEXT
                 if part_type == "text":
 
                     text = clean_text(
@@ -207,13 +211,15 @@ def clean_messages(messages):
                     if not text:
                         continue
 
-                    remaining = MAX_TOTAL_CHARS - total_chars
+                    remaining = (
+                        MAX_TOTAL_CHARS -
+                        total_chars
+                    )
 
                     if remaining <= 0:
                         break
 
-                    if len(text) > remaining:
-                        text = text[:remaining]
+                    text = text[:remaining]
 
                     parts.append({
                         "type": "text",
@@ -226,13 +232,23 @@ def clean_messages(messages):
                 # IMAGE
                 elif part_type == "image_url":
 
-                    image_url = part.get("image_url")
+                    image_url = part.get(
+                        "image_url"
+                    )
 
-                    if isinstance(image_url, dict):
+                    if isinstance(
+                        image_url,
+                        dict
+                    ):
 
-                        url = image_url.get("url")
+                        url = image_url.get(
+                            "url"
+                        )
 
-                        if isinstance(url, str) and url:
+                        if (
+                            isinstance(url, str)
+                            and url
+                        ):
 
                             parts.append({
                                 "type": "image_url",
@@ -245,13 +261,23 @@ def clean_messages(messages):
                 # VIDEO
                 elif part_type == "video_url":
 
-                    video_url = part.get("video_url")
+                    video_url = part.get(
+                        "video_url"
+                    )
 
-                    if isinstance(video_url, dict):
+                    if isinstance(
+                        video_url,
+                        dict
+                    ):
 
-                        url = video_url.get("url")
+                        url = video_url.get(
+                            "url"
+                        )
 
-                        if isinstance(url, str) and url:
+                        if (
+                            isinstance(url, str)
+                            and url
+                        ):
 
                             parts.append({
                                 "type": "video_url",
@@ -273,7 +299,7 @@ def clean_messages(messages):
 
 
 # =========================================================
-# OPENROUTER HEADERS
+# HEADERS
 # =========================================================
 
 def openrouter_headers():
@@ -290,32 +316,40 @@ def openrouter_headers():
 # NORMAL CHAT
 # =========================================================
 
-@app.route("/api/chat", methods=["POST"])
+@app.route(
+    "/api/chat",
+    methods=["POST"]
+)
 def chat():
 
     try:
 
         if not API_KEY:
+
             return error_json(
-                "OPENROUTER_API_KEY روی Render تنظیم نشده.",
+                "OPENROUTER_API_KEY تنظیم نشده.",
                 500
             )
 
 
-        body = request.get_json(silent=True)
+        body = request.get_json(
+            silent=True
+        )
 
         if not body:
+
             return error_json(
-                "درخواست JSON معتبر نیست.",
+                "JSON معتبر نیست.",
                 400
             )
 
 
-        messages = body.get("messages")
+        messages = clean_messages(
+            body.get("messages")
+        )
 
-        clean = clean_messages(messages)
 
-        if not clean:
+        if not messages:
 
             return error_json(
                 "پیامی برای ارسال وجود ندارد.",
@@ -330,14 +364,23 @@ def chat():
             }
         ]
 
-        final_messages.extend(clean)
+        final_messages.extend(
+            messages
+        )
 
 
         payload = {
             "model": MODEL,
             "messages": final_messages,
             "temperature": 0.7,
-            "max_tokens": 3000
+            "max_tokens": 3000,
+
+            # Web Search
+            "tools": [
+                {
+                    "type": "openrouter:web_search"
+                }
+            ]
         }
 
 
@@ -350,27 +393,62 @@ def chat():
 
 
         try:
+
             data = response.json()
 
         except Exception:
 
             return error_json(
-                "OpenRouter پاسخ JSON معتبر نداد.",
+                "OpenRouter پاسخ JSON نداد.",
                 502,
-                response.text[:3000]
+                response.text[:2000]
             )
 
 
         if response.status_code >= 400:
 
+            error_message = (
+                "OpenRouter خطا داد."
+            )
+
+            error_obj = (
+                data.get("error")
+                if isinstance(data, dict)
+                else None
+            )
+
+            if isinstance(
+                error_obj,
+                dict
+            ):
+
+                error_message = (
+                    error_obj.get(
+                        "message",
+                        error_message
+                    )
+                )
+
+            elif isinstance(
+                error_obj,
+                str
+            ):
+
+                error_message = error_obj
+
+
             return error_json(
-                "OpenRouter درخواست را قبول نکرد.",
+                error_message,
                 502,
                 data
             )
 
 
-        choices = data.get("choices", [])
+        choices = data.get(
+            "choices",
+            []
+        )
+
 
         if not choices:
 
@@ -390,7 +468,15 @@ def chat():
         )
 
 
-        if not answer:
+        if not isinstance(
+            answer,
+            str
+        ):
+
+            answer = str(answer)
+
+
+        if not answer.strip():
 
             return error_json(
                 "مدل پاسخ متنی برنگرداند.",
@@ -432,350 +518,444 @@ def chat():
 
 
 # =========================================================
-# STREAMING CHAT
+# STREAMING CHAT + WEB SEARCH
 # =========================================================
 
-@app.route("/api/chat/stream", methods=["POST"])
+@app.route(
+    "/api/chat/stream",
+    methods=["POST"]
+)
 def chat_stream():
 
     if not API_KEY:
 
         return error_json(
-            "OPENROUTER_API_KEY روی Render تنظیم نشده.",
+            "OPENROUTER_API_KEY تنظیم نشده.",
             500
         )
 
 
-    try:
+    body = request.get_json(
+        silent=True
+    )
 
-        body = request.get_json(silent=True)
+    if not body:
 
-        if not body:
-
-            return error_json(
-                "درخواست JSON معتبر نیست.",
-                400
-            )
-
-
-        messages = body.get("messages")
-
-        clean = clean_messages(messages)
-
-        if not clean:
-
-            return error_json(
-                "پیامی برای ارسال وجود ندارد.",
-                400
-            )
+        return error_json(
+            "JSON معتبر نیست.",
+            400
+        )
 
 
-        final_messages = [
+    messages = clean_messages(
+        body.get("messages")
+    )
+
+
+    if not messages:
+
+        return error_json(
+            "پیامی برای ارسال وجود ندارد.",
+            400
+        )
+
+
+    final_messages = [
+        {
+            "role": "system",
+            "content": SYSTEM_PROMPT
+        }
+    ]
+
+    final_messages.extend(
+        messages
+    )
+
+
+    payload = {
+
+        "model": MODEL,
+
+        "messages": final_messages,
+
+        "stream": True,
+
+        "temperature": 0.7,
+
+        "max_tokens": 3000,
+
+        # ==============================
+        # KEEP WEB SEARCH
+        # ==============================
+
+        "tools": [
             {
-                "role": "system",
-                "content": SYSTEM_PROMPT
+                "type": "openrouter:web_search",
+
+                "parameters": {
+                    "engine": "auto",
+                    "max_results": 5,
+                    "max_total_results": 10
+                }
             }
         ]
-
-        final_messages.extend(clean)
-
-
-        # =================================================
-        # OPENROUTER PAYLOAD
-        # =================================================
-
-        payload = {
-            "model": MODEL,
-            "messages": final_messages,
-
-            # REAL STREAMING
-            "stream": True,
-
-            "temperature": 0.7,
-            "max_tokens": 3000,
-
-            # Web Search
-            "tools": [
-                {
-                    "type": "openrouter:web_search"
-                }
-            ]
-        }
+    }
 
 
-        @stream_with_context
-        def generate():
+    def generate():
 
-            try:
+        try:
 
-                response = requests.post(
-                    OPENROUTER_URL,
-                    headers=openrouter_headers(),
-                    json=payload,
-                    stream=True,
-                    timeout=(20, 180)
+            response = requests.post(
+
+                OPENROUTER_URL,
+
+                headers=openrouter_headers(),
+
+                json=payload,
+
+                stream=True,
+
+                timeout=(
+                    30,
+                    180
                 )
+            )
 
 
-                # -----------------------------------------
-                # OPENROUTER ERROR
-                # -----------------------------------------
+            # =========================================
+            # OPENROUTER ERROR
+            # =========================================
 
-                if response.status_code >= 400:
+            if response.status_code >= 400:
 
-                    try:
+                try:
 
-                        error_data = response.json()
+                    data = response.json()
 
-                        message = "OpenRouter خطا داد."
+                    message = (
+                        "OpenRouter خطا داد."
+                    )
 
-                        if isinstance(error_data, dict):
+                    if isinstance(
+                        data,
+                        dict
+                    ):
 
-                            error_obj = error_data.get(
-                                "error"
-                            )
+                        error_obj = data.get(
+                            "error"
+                        )
 
-                            if isinstance(
-                                error_obj,
-                                dict
-                            ):
+                        if isinstance(
+                            error_obj,
+                            dict
+                        ):
 
-                                message = error_obj.get(
+                            message = (
+                                error_obj.get(
                                     "message",
                                     message
                                 )
+                            )
 
-                            elif isinstance(
-                                error_obj,
-                                str
-                            ):
+                        elif isinstance(
+                            error_obj,
+                            str
+                        ):
 
-                                message = error_obj
+                            message = error_obj
 
-                    except Exception:
+                except Exception:
 
-                        message = response.text[:1000]
-
-
-                    yield (
-                        "data: "
-                        + json.dumps(
-                            {
-                                "type": "error",
-                                "message": message
-                            },
-                            ensure_ascii=False
-                        )
-                        + "\n\n"
+                    message = (
+                        response.text[:2000]
                     )
 
-                    return
+
+                yield (
+                    "data: " +
+                    json.dumps(
+                        {
+                            "type": "error",
+                            "message": message
+                        },
+                        ensure_ascii=False
+                    ) +
+                    "\n\n"
+                )
+
+                return
 
 
-                # -----------------------------------------
-                # STREAM
-                # -----------------------------------------
+            # =========================================
+            # STREAM
+            #
+            # chunk_size=1 مهمه
+            # =========================================
 
-                for line in response.iter_lines(
-                    decode_unicode=True
+            for line in response.iter_lines(
+                chunk_size=1,
+                decode_unicode=True
+            ):
+
+                if not line:
+                    continue
+
+
+                line = line.strip()
+
+
+                if not line.startswith(
+                    "data:"
                 ):
 
-                    if not line:
-                        continue
+                    continue
 
 
-                    if line.startswith("data:"):
-
-                        raw = line[
-                            5:
-                        ].strip()
+                raw = line[
+                    5:
+                ].strip()
 
 
-                        if raw == "[DONE]":
+                if not raw:
+                    continue
 
-                            yield (
-                                "data: "
-                                + json.dumps(
-                                    {
-                                        "type": "done"
-                                    },
-                                    ensure_ascii=False
-                                )
-                                + "\n\n"
+
+                if raw == "[DONE]":
+
+                    yield (
+                        "data: " +
+                        json.dumps(
+                            {
+                                "type": "done"
+                            },
+                            ensure_ascii=False
+                        ) +
+                        "\n\n"
+                    )
+
+                    break
+
+
+                try:
+
+                    chunk = json.loads(
+                        raw
+                    )
+
+                except Exception:
+
+                    continue
+
+
+                # =====================================
+                # SEARCH / TOOL INFORMATION
+                # =====================================
+
+                choices = chunk.get(
+                    "choices",
+                    []
+                )
+
+
+                if not choices:
+                    continue
+
+
+                choice = choices[0]
+
+                delta = choice.get(
+                    "delta",
+                    {}
+                )
+
+
+                # =====================================
+                # TEXT
+                # =====================================
+
+                content = delta.get(
+                    "content"
+                )
+
+
+                if content:
+
+                    yield (
+                        "data: " +
+                        json.dumps(
+                            {
+                                "type": "content",
+                                "text": content
+                            },
+                            ensure_ascii=False
+                        ) +
+                        "\n\n"
+                    )
+
+
+                # =====================================
+                # TOOL CALL
+                # =====================================
+
+                tool_calls = delta.get(
+                    "tool_calls"
+                )
+
+
+                if tool_calls:
+
+                    for tool in tool_calls:
+
+                        function = tool.get(
+                            "function",
+                            {}
+                        )
+
+                        tool_name = (
+                            function.get(
+                                "name",
+                                ""
                             )
+                        )
 
-                            break
-
-
-                        try:
-
-                            chunk = json.loads(raw)
-
-                        except Exception:
-
-                            continue
-
-
-                        # ---------------------------------
-                        # CONTENT
-                        # ---------------------------------
-
-                        choices = chunk.get(
-                            "choices",
-                            []
+                        arguments = (
+                            function.get(
+                                "arguments",
+                                ""
+                            )
                         )
 
 
-                        if choices:
-
-                            delta = choices[0].get(
-                                "delta",
-                                {}
-                            )
-
-
-                            content = delta.get(
-                                "content"
-                            )
-
-
-                            if content:
-
-                                yield (
-                                    "data: "
-                                    + json.dumps(
-                                        {
-                                            "type": "content",
-                                            "text": content
-                                        },
-                                        ensure_ascii=False
-                                    )
-                                    + "\n\n"
-                                )
+                        yield (
+                            "data: " +
+                            json.dumps(
+                                {
+                                    "type": "search",
+                                    "name": tool_name,
+                                    "arguments": arguments
+                                },
+                                ensure_ascii=False
+                            ) +
+                            "\n\n"
+                        )
 
 
-                            # ---------------------------------
-                            # TOOL CALL / SEARCH
-                            # ---------------------------------
+                # =====================================
+                # SOME PROVIDERS MAY SEND REASONING
+                # =====================================
 
-                            tool_calls = delta.get(
-                                "tool_calls"
-                            )
-
-
-                            if tool_calls:
-
-                                for tool in tool_calls:
-
-                                    function = tool.get(
-                                        "function",
-                                        {}
-                                    )
-
-                                    tool_name = function.get(
-                                        "name",
-                                        ""
-                                    )
-
-                                    arguments = function.get(
-                                        "arguments",
-                                        ""
-                                    )
-
-
-                                    if tool_name:
-
-                                        yield (
-                                            "data: "
-                                            + json.dumps(
-                                                {
-                                                    "type": "search",
-                                                    "name": tool_name,
-                                                    "arguments": arguments
-                                                },
-                                                ensure_ascii=False
-                                            )
-                                            + "\n\n"
-                                        )
-
-
-                yield (
-                    "data: "
-                    + json.dumps(
-                        {
-                            "type": "done"
-                        },
-                        ensure_ascii=False
-                    )
-                    + "\n\n"
+                reasoning = delta.get(
+                    "reasoning"
                 )
 
 
-            except requests.Timeout:
+                if reasoning:
 
-                yield (
-                    "data: "
-                    + json.dumps(
-                        {
-                            "type": "error",
-                            "message": "زمان پاسخ مدل تمام شد."
-                        },
-                        ensure_ascii=False
+                    yield (
+                        "data: " +
+                        json.dumps(
+                            {
+                                "type": "reasoning",
+                                "text": reasoning
+                            },
+                            ensure_ascii=False
+                        ) +
+                        "\n\n"
                     )
-                    + "\n\n"
-                )
 
 
-            except requests.RequestException as e:
+            # =========================================
+            # FINISHED
+            # =========================================
 
-                yield (
-                    "data: "
-                    + json.dumps(
-                        {
-                            "type": "error",
-                            "message": "ارتباط با OpenRouter قطع شد.",
-                            "details": str(e)
-                        },
-                        ensure_ascii=False
-                    )
-                    + "\n\n"
-                )
-
-
-            except Exception as e:
-
-                yield (
-                    "data: "
-                    + json.dumps(
-                        {
-                            "type": "error",
-                            "message": "خطای Streaming سرور.",
-                            "details": str(e)
-                        },
-                        ensure_ascii=False
-                    )
-                    + "\n\n"
-                )
+            yield (
+                "data: " +
+                json.dumps(
+                    {
+                        "type": "done"
+                    },
+                    ensure_ascii=False
+                ) +
+                "\n\n"
+            )
 
 
-        return Response(
-            generate(),
-            mimetype="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "X-Accel-Buffering": "no",
-                "Connection": "keep-alive"
-            }
-        )
+        except requests.Timeout:
+
+            yield (
+                "data: " +
+                json.dumps(
+                    {
+                        "type": "error",
+                        "message":
+                            "زمان پاسخ مدل تمام شد."
+                    },
+                    ensure_ascii=False
+                ) +
+                "\n\n"
+            )
 
 
-    except Exception as e:
+        except requests.RequestException as e:
 
-        return error_json(
-            "خطای شروع Streaming.",
-            500,
-            str(e)
-        )
+            yield (
+                "data: " +
+                json.dumps(
+                    {
+                        "type": "error",
+                        "message":
+                            "ارتباط با OpenRouter قطع شد.",
+                        "details": str(e)
+                    },
+                    ensure_ascii=False
+                ) +
+                "\n\n"
+            )
+
+
+        except Exception as e:
+
+            yield (
+                "data: " +
+                json.dumps(
+                    {
+                        "type": "error",
+                        "message":
+                            "خطای Streaming سرور.",
+                        "details": str(e)
+                    },
+                    ensure_ascii=False
+                ) +
+                "\n\n"
+            )
+
+
+    return Response(
+
+        stream_with_context(
+            generate()
+        ),
+
+        status=200,
+
+        mimetype="text/event-stream",
+
+        headers={
+
+            "Cache-Control":
+                "no-cache, no-transform",
+
+            "X-Accel-Buffering":
+                "no",
+
+            "Connection":
+                "keep-alive",
+
+            "Content-Encoding":
+                "identity"
+        }
+    )
 
 
 # =========================================================
