@@ -27,19 +27,21 @@ SYSTEM_PROMPT = """
 تو BEHRAD AI هستی؛ یک دستیار هوش مصنوعی فارسی‌زبان.
 
 اطلاعات پروژه:
+
 - صاحب BEHRAD AI: بهراد محمدی
 - سازنده BEHRAD AI: بهراد محمدی
 - نام مستعار سازنده: بهراد ام پلیر
 - نام برند: BEHRAD M PLAYER
 
-اگر کاربر درباره صاحب، سازنده یا مالک BEHRAD AI پرسید،
-بگو:
+اگر کاربر درباره صاحب، سازنده یا مالک BEHRAD AI پرسید، بگو:
+
 «صاحب و سازنده BEHRAD AI، بهراد محمدی ملقب به بهراد ام پلیر (BEHRAD M PLAYER) است.»
 
 قوانین:
-- اگر کاربر فارسی صحبت کرد، فارسی و کاملاً خوانا پاسخ بده.
+
+- اگر کاربر فارسی صحبت کرد، فارسی و خوانا پاسخ بده.
 - اگر کاربر انگلیسی صحبت کرد، انگلیسی پاسخ بده.
-- پاسخ طبیعی و دوستانه باشد.
+- پاسخ‌ها طبیعی، دوستانه و دقیق باشند.
 - در برنامه‌نویسی کد کامل و قابل استفاده ارائه کن.
 - برای اطلاعات جدید، در صورت نیاز از جستجوی وب استفاده کن.
 - فارسی را با UTF-8 صحیح تولید کن.
@@ -68,23 +70,19 @@ def health():
 
 
 def normalize_content(content):
-
     if isinstance(content, str):
         return content[:MAX_MESSAGE_CHARS]
 
     if isinstance(content, list):
-
         result = []
 
         for part in content:
-
             if not isinstance(part, dict):
                 continue
 
-            ptype = part.get("type")
+            part_type = part.get("type")
 
-            if ptype == "text":
-
+            if part_type == "text":
                 result.append({
                     "type": "text",
                     "text": str(
@@ -92,8 +90,7 @@ def normalize_content(content):
                     )[:MAX_MESSAGE_CHARS]
                 })
 
-            elif ptype == "image_url":
-
+            elif part_type == "image_url":
                 image_url = part.get("image_url")
 
                 if isinstance(image_url, dict):
@@ -114,14 +111,12 @@ def normalize_content(content):
 
 
 def clean_messages(messages):
-
     if not isinstance(messages, list):
         return []
 
-    cleaned = []
-
     messages = messages[-MAX_HISTORY:]
 
+    cleaned = []
     total_chars = 0
 
     for msg in messages:
@@ -163,29 +158,21 @@ def clean_messages(messages):
 
 
 def openrouter_headers():
-
     return {
-        "Authorization":
-            f"Bearer {OPENROUTER_API_KEY}",
-
-        "Content-Type":
-            "application/json; charset=utf-8",
-
-        "Accept":
-            "text/event-stream",
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json; charset=utf-8",
+        "Accept": "text/event-stream",
 
         "HTTP-Referer":
             "https://behradb44-sketch.github.io/behrad-m-player/",
 
-        "X-Title":
-            "BEHRAD AI"
+        "X-Title": "BEHRAD AI"
     }
 
 
 def create_payload(messages, stream=False):
 
     return {
-
         "model": MODEL,
 
         "messages": [
@@ -232,15 +219,10 @@ def make_sse(event, data):
     return payload.encode("utf-8")
 
 
-# =========================================================
-# NORMAL CHAT
-# =========================================================
-
 @app.route("/api/chat", methods=["POST"])
 def chat():
 
     if not OPENROUTER_API_KEY:
-
         return error_response(
             "OPENROUTER_API_KEY تنظیم نشده است.",
             500
@@ -258,7 +240,6 @@ def chat():
         )
 
         if not messages:
-
             return error_response(
                 "پیامی دریافت نشد.",
                 400
@@ -297,7 +278,6 @@ def chat():
         )
 
         if not choices:
-
             return error_response(
                 "OpenRouter پاسخ خالی برگرداند.",
                 502
@@ -310,7 +290,6 @@ def chat():
         )
 
         if not answer:
-
             answer = "مدل پاسخ متنی برنگرداند."
 
         return jsonify({
@@ -327,10 +306,6 @@ def chat():
         )
 
 
-# =========================================================
-# STREAMING
-# =========================================================
-
 @app.route("/api/chat/stream", methods=["POST"])
 def chat_stream():
 
@@ -344,16 +319,15 @@ def chat_stream():
                         "OPENROUTER_API_KEY تنظیم نشده است."
                 }
             ),
+
             status=500,
+
             content_type=
                 "text/event-stream; charset=utf-8"
         )
 
-    # -----------------------------------------------------
-    # نکته مهم:
-    # request را همین‌جا می‌خوانیم، قبل از generator.
-    # -----------------------------------------------------
-
+    # مهم:
+    # request باید قبل از generator خوانده شود.
     try:
 
         data = request.get_json(
@@ -375,7 +349,9 @@ def chat_stream():
                         f"درخواست نامعتبر است: {str(e)}"
                 }
             ),
+
             status=400,
+
             content_type=
                 "text/event-stream; charset=utf-8"
         )
@@ -390,7 +366,9 @@ def chat_stream():
                         "پیامی دریافت نشد."
                 }
             ),
+
             status=400,
+
             content_type=
                 "text/event-stream; charset=utf-8"
         )
@@ -399,10 +377,6 @@ def chat_stream():
         messages,
         stream=True
     )
-
-    # -----------------------------------------------------
-    # Generator جدا
-    # -----------------------------------------------------
 
     @stream_with_context
     def generate():
@@ -433,8 +407,9 @@ def chat_stream():
                     )
 
                     try:
-                        error_data =
-                            json.loads(error_text)
+                        error_data = json.loads(
+                            error_text
+                        )
                     except Exception:
                         error_data = error_text[:3000]
 
@@ -480,11 +455,10 @@ def chat_stream():
 
                 while b"\n\n" in buffer:
 
-                    raw_event, buffer = \
-                        buffer.split(
-                            b"\n\n",
-                            1
-                        )
+                    raw_event, buffer = buffer.split(
+                        b"\n\n",
+                        1
+                    )
 
                     event_text = raw_event.decode(
                         "utf-8",
@@ -493,13 +467,12 @@ def chat_stream():
 
                     for line in event_text.splitlines():
 
-                        if not line.startswith(
-                            "data:"
-                        ):
+                        if not line.startswith("data:"):
                             continue
 
-                        data_text = \
-                            line[5:].strip()
+                        data_text = line[
+                            5:
+                        ].strip()
 
                         if not data_text:
                             continue
@@ -515,59 +488,43 @@ def chat_stream():
 
                         try:
 
-                            chunk_data = \
-                                json.loads(
-                                    data_text
-                                )
+                            chunk_data = json.loads(
+                                data_text
+                            )
 
                         except json.JSONDecodeError:
-
                             continue
 
-                        choices = \
-                            chunk_data.get(
-                                "choices",
-                                []
-                            )
+                        choices = chunk_data.get(
+                            "choices",
+                            []
+                        )
 
                         if not choices:
                             continue
 
                         choice = choices[0]
 
-                        delta = \
-                            choice.get(
-                                "delta",
-                                {}
-                            )
+                        delta = choice.get(
+                            "delta",
+                            {}
+                        )
 
-                        # --------------------------
-                        # TEXT
-                        # --------------------------
-
-                        content = \
-                            delta.get(
-                                "content"
-                            )
+                        content = delta.get(
+                            "content"
+                        )
 
                         if content:
 
                             yield make_sse(
                                 "token",
                                 {
-                                    "text":
-                                        content
+                                    "text": content
                                 }
                             )
 
-                        # --------------------------
-                        # REASONING
-                        # --------------------------
-
                         reasoning = (
-                            delta.get(
-                                "reasoning"
-                            )
+                            delta.get("reasoning")
                             or
                             delta.get(
                                 "reasoning_content"
@@ -579,19 +536,13 @@ def chat_stream():
                             yield make_sse(
                                 "reasoning",
                                 {
-                                    "text":
-                                        reasoning
+                                    "text": reasoning
                                 }
                             )
 
-                        # --------------------------
-                        # TOOL / SEARCH
-                        # --------------------------
-
-                        tool_calls = \
-                            delta.get(
-                                "tool_calls"
-                            )
+                        tool_calls = delta.get(
+                            "tool_calls"
+                        )
 
                         if tool_calls:
 
@@ -603,8 +554,7 @@ def chat_stream():
                                 }
                             )
 
-            # باقی‌مانده buffer
-
+            # پردازش آخرین تکه
             if buffer.strip():
 
                 event_text = buffer.decode(
@@ -614,13 +564,12 @@ def chat_stream():
 
                 for line in event_text.splitlines():
 
-                    if not line.startswith(
-                        "data:"
-                    ):
+                    if not line.startswith("data:"):
                         continue
 
-                    data_text = \
-                        line[5:].strip()
+                    data_text = line[
+                        5:
+                    ].strip()
 
                     if not data_text:
                         continue
@@ -630,42 +579,36 @@ def chat_stream():
 
                     try:
 
-                        chunk_data = \
-                            json.loads(
-                                data_text
-                            )
+                        chunk_data = json.loads(
+                            data_text
+                        )
 
                     except Exception:
-
                         continue
 
-                    choices = \
-                        chunk_data.get(
-                            "choices",
-                            []
-                        )
+                    choices = chunk_data.get(
+                        "choices",
+                        []
+                    )
 
                     if not choices:
                         continue
 
-                    delta = \
-                        choices[0].get(
-                            "delta",
-                            {}
-                        )
+                    delta = choices[0].get(
+                        "delta",
+                        {}
+                    )
 
-                    content = \
-                        delta.get(
-                            "content"
-                        )
+                    content = delta.get(
+                        "content"
+                    )
 
                     if content:
 
                         yield make_sse(
                             "token",
                             {
-                                "text":
-                                    content
+                                "text": content
                             }
                         )
 
@@ -704,8 +647,8 @@ def chat_stream():
                 {}
             )
 
-
     return Response(
+
         generate(),
 
         status=200,
@@ -728,10 +671,6 @@ def chat_stream():
         }
     )
 
-
-# =========================================================
-# TEST
-# =========================================================
 
 @app.route("/api/test-ai")
 def test_ai():
@@ -779,10 +718,6 @@ def test_ai():
         )
 
 
-# =========================================================
-# START
-# =========================================================
-
 if __name__ == "__main__":
 
     port = int(
@@ -796,4 +731,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
         debug=False
-                        )
+                            )
