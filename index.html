@@ -1,127 +1,1575 @@
-async function sendMessage(){
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
 
-    if(isSending) return;
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    const text = input.value.trim();
+    <title>BEHRAD AI</title>
 
-    if(!text && !selectedFile) return;
+    <!-- Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-    isSending = true;
-    sendButton.disabled = true;
+    <!-- Sanitize -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
 
-    if(welcome){
-        welcome.style.display = "none";
-    }
+    <style>
 
-    let userContent = text;
+        * {
+            box-sizing: border-box;
+        }
 
-    // ================================
-    // IMAGE
-    // ================================
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
 
-    if(
-        selectedFile &&
-        selectedFile.type.startsWith("image/")
-    ){
+        body {
+            background: #212121;
+            color: #ececec;
+            font-family:
+                Tahoma,
+                Arial,
+                sans-serif;
 
-        try{
+            overflow: hidden;
+        }
 
-            const dataURL =
-                await fileToDataURL(selectedFile);
+        button,
+        textarea,
+        input {
+            font-family: inherit;
+        }
 
-            userContent = [
-                {
-                    type: "text",
-                    text:
-                        text ||
-                        "این تصویر را بررسی کن."
-                },
-                {
-                    type: "image_url",
-                    image_url: {
-                        url: dataURL
-                    }
-                }
-            ];
+        /* =====================================================
+           APP
+        ===================================================== */
 
-        }catch(error){
+        .app {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+        }
 
-            console.error(error);
+        /* =====================================================
+           SIDEBAR
+        ===================================================== */
+
+        .sidebar {
+            width: 260px;
+            flex-shrink: 0;
+
+            background: #171717;
+            border-left: 1px solid #303030;
+
+            display: flex;
+            flex-direction: column;
+
+            padding: 12px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            padding: 12px 10px 18px;
+
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .brand-logo {
+            width: 34px;
+            height: 34px;
+
+            border-radius: 10px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            background: #10a37f;
+
+            color: white;
+            font-size: 17px;
+        }
+
+        .new-chat {
+            border: 1px solid #444;
+            background: #212121;
+            color: #eee;
+
+            border-radius: 8px;
+
+            padding: 11px 12px;
+
+            cursor: pointer;
+
+            font-size: 14px;
+
+            text-align: right;
+
+            transition: 0.2s;
+        }
+
+        .new-chat:hover {
+            background: #2a2a2a;
+        }
+
+        .history-title {
+            color: #888;
+
+            font-size: 12px;
+
+            margin:
+                24px
+                8px
+                8px;
+        }
+
+        .history {
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .history-item {
+            padding: 10px 11px;
+
+            margin-bottom: 3px;
+
+            border-radius: 7px;
+
+            color: #cfcfcf;
+
+            font-size: 13px;
+
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+
+            cursor: pointer;
+        }
+
+        .history-item:hover {
+            background: #2a2a2a;
+        }
+
+        .sidebar-footer {
+            color: #777;
+            font-size: 11px;
+
+            text-align: center;
+
+            padding: 10px 0 4px;
+        }
+
+        /* =====================================================
+           MAIN
+        ===================================================== */
+
+        .main {
+            flex: 1;
+
+            min-width: 0;
+
+            display: flex;
+            flex-direction: column;
+
+            background: #212121;
+        }
+
+        .topbar {
+            height: 58px;
+
+            flex-shrink: 0;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            padding:
+                0
+                22px;
+
+            border-bottom: 1px solid #303030;
+
+            background: rgba(
+                33,
+                33,
+                33,
+                0.96
+            );
+
+            backdrop-filter: blur(10px);
+        }
+
+        .model-name {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .model-status {
+            color: #777;
+            font-size: 11px;
+
+            margin-right: 8px;
+        }
+
+        .online-dot {
+            display: inline-block;
+
+            width: 7px;
+            height: 7px;
+
+            border-radius: 50%;
+
+            background: #10a37f;
+
+            margin-left: 5px;
+        }
+
+        /* =====================================================
+           CHAT
+        ===================================================== */
+
+        .chat {
+            flex: 1;
+
+            overflow-y: auto;
+
+            scroll-behavior: smooth;
+        }
+
+        .chat-inner {
+            width: min(
+                900px,
+                calc(100% - 32px)
+            );
+
+            margin: 0 auto;
+
+            padding:
+                35px
+                0
+                170px;
+        }
+
+        .welcome {
+            min-height: 55vh;
+
+            display: flex;
+            flex-direction: column;
+
+            justify-content: center;
+            align-items: center;
+
+            text-align: center;
+        }
+
+        .welcome-logo {
+            width: 60px;
+            height: 60px;
+
+            border-radius: 18px;
+
+            background: #10a37f;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 27px;
+            font-weight: bold;
+
+            margin-bottom: 20px;
+        }
+
+        .welcome h1 {
+            margin: 0 0 10px;
+
+            font-size: 29px;
+        }
+
+        .welcome p {
+            margin: 0;
+
+            color: #999;
+
+            font-size: 14px;
+        }
+
+        /* =====================================================
+           MESSAGE
+        ===================================================== */
+
+        .message {
+            display: flex;
+
+            gap: 15px;
+
+            margin-bottom: 28px;
+
+            line-height: 1.9;
+        }
+
+        .message-avatar {
+            width: 34px;
+            height: 34px;
+
+            min-width: 34px;
+
+            border-radius: 9px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .message.user .message-avatar {
+            background: #444;
+        }
+
+        .message.assistant .message-avatar {
+            background: #10a37f;
+        }
+
+        .message-body {
+            min-width: 0;
+
+            width: 100%;
+
+            font-size: 15px;
+        }
+
+        .message-body p:first-child {
+            margin-top: 0;
+        }
+
+        .message-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* =====================================================
+           MARKDOWN
+        ===================================================== */
+
+        .message-body pre {
+            position: relative;
+
+            direction: ltr;
+            text-align: left;
+
+            background: #111;
+
+            border:
+                1px solid
+                #333;
+
+            border-radius: 9px;
+
+            padding: 42px 14px 14px;
+
+            overflow-x: auto;
+
+            margin:
+                14px
+                0;
+        }
+
+        .message-body code {
+            font-family:
+                Consolas,
+                "Courier New",
+                monospace;
+
+            font-size: 13px;
+        }
+
+        .message-body :not(pre) > code {
+            background: #303030;
+
+            border-radius: 5px;
+
+            padding:
+                2px
+                6px;
+
+            direction: ltr;
+        }
+
+        .message-body blockquote {
+            border-right: 3px solid #10a37f;
+
+            margin:
+                12px
+                0;
+
+            padding-right: 12px;
+
+            color: #aaa;
+        }
+
+        .message-body table {
+            border-collapse: collapse;
+
+            width: 100%;
+
+            margin: 15px 0;
+        }
+
+        .message-body th,
+        .message-body td {
+            border: 1px solid #444;
+
+            padding: 8px;
+
+            text-align: right;
+        }
+
+        .message-body th {
+            background: #2b2b2b;
+        }
+
+        .message-body a {
+            color: #52a8ff;
+        }
+
+        /* =====================================================
+           COPY CODE
+        ===================================================== */
+
+        .code-copy {
+            position: absolute;
+
+            top: 8px;
+            left: 8px;
+
+            border: 1px solid #444;
+
+            background: #242424;
+
+            color: #ddd;
+
+            border-radius: 6px;
+
+            padding:
+                5px
+                9px;
+
+            font-size: 11px;
+
+            cursor: pointer;
+        }
+
+        .code-copy:hover {
+            background: #333;
+        }
+
+        /* =====================================================
+           SEARCH STATUS
+        ===================================================== */
+
+        .search-status {
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 8px;
+
+            background: #292929;
+
+            border: 1px solid #3b3b3b;
+
+            color: #bbb;
+
+            border-radius: 8px;
+
+            padding:
+                7px
+                10px;
+
+            margin-bottom: 10px;
+
+            font-size: 12px;
+        }
+
+        .search-icon {
+            animation:
+                searchPulse
+                1.1s
+                infinite;
+        }
+
+        @keyframes searchPulse {
+
+            0% {
+                opacity: .4;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: .4;
+            }
+        }
+
+        /* =====================================================
+           THINKING
+        ===================================================== */
+
+        .thinking {
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+        }
+
+        .thinking-text {
+            color: #999;
+
+            font-size: 13px;
+        }
+
+        .wave {
+            display: flex;
+
+            align-items: center;
+
+            gap: 3px;
+
+            height: 22px;
+        }
+
+        .wave span {
+            display: block;
+
+            width: 3px;
+
+            height: 7px;
+
+            border-radius: 5px;
+
+            background: #10a37f;
+
+            animation:
+                wave
+                1s
+                infinite
+                ease-in-out;
+        }
+
+        .wave span:nth-child(2) {
+            animation-delay: .1s;
+        }
+
+        .wave span:nth-child(3) {
+            animation-delay: .2s;
+        }
+
+        .wave span:nth-child(4) {
+            animation-delay: .3s;
+        }
+
+        .wave span:nth-child(5) {
+            animation-delay: .4s;
+        }
+
+        @keyframes wave {
+
+            0%,
+            100% {
+                height: 7px;
+            }
+
+            50% {
+                height: 20px;
+            }
+        }
+
+        /* =====================================================
+           COMPOSER
+        ===================================================== */
+
+        .composer-area {
+            position: fixed;
+
+            bottom: 0;
+            right: 260px;
+            left: 0;
+
+            padding:
+                15px
+                20px
+                20px;
+
+            background:
+                linear-gradient(
+                    to top,
+                    #212121 70%,
+                    rgba(33,33,33,0)
+                );
+        }
+
+        .composer {
+            width: min(
+                900px,
+                calc(100% - 32px)
+            );
+
+            margin: 0 auto;
+
+            border:
+                1px solid
+                #444;
+
+            background: #2f2f2f;
+
+            border-radius: 14px;
+
+            padding: 8px;
+
+            box-shadow:
+                0
+                4px
+                30px
+                rgba(0,0,0,.25);
+        }
+
+        .attachment-preview {
+            display: none;
+
+            align-items: center;
+            justify-content: space-between;
+
+            background: #242424;
+
+            border-radius: 9px;
+
+            padding:
+                8px
+                10px;
+
+            margin-bottom: 7px;
+
+            color: #bbb;
+
+            font-size: 12px;
+        }
+
+        .attachment-preview.active {
+            display: flex;
+        }
+
+        .remove-file {
+            border: 0;
+
+            background: transparent;
+
+            color: #999;
+
+            cursor: pointer;
+
+            font-size: 17px;
+        }
+
+        .composer-row {
+            display: flex;
+
+            align-items: flex-end;
+
+            gap: 8px;
+        }
+
+        .attach-button,
+        .send-button {
+            width: 38px;
+            height: 38px;
+
+            min-width: 38px;
+
+            border-radius: 9px;
+
+            border: 0;
+
+            cursor: pointer;
+        }
+
+        .attach-button {
+            background: #444;
+
+            color: #ddd;
+
+            font-size: 18px;
+        }
+
+        .attach-button:hover {
+            background: #4d4d4d;
+        }
+
+        .send-button {
+            background: #10a37f;
+
+            color: white;
+
+            font-size: 17px;
+        }
+
+        .send-button:hover {
+            background: #0e8e70;
+        }
+
+        .send-button:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+        #input {
+            flex: 1;
+
+            resize: none;
+
+            max-height: 180px;
+
+            min-height: 38px;
+
+            background: transparent;
+
+            border: 0;
+
+            outline: 0;
+
+            color: #eee;
+
+            font-size: 14px;
+
+            line-height: 1.7;
+
+            padding:
+                8px
+                5px;
 
         }
-    }
 
-    // ================================
-    // VIDEO
-    // ================================
+        #input::placeholder {
+            color: #777;
+        }
 
-    else if(
-        selectedFile &&
-        selectedFile.type.startsWith("video/")
-    ){
+        .composer-note {
+            text-align: center;
 
-        userContent =
-            text
-            ? `${text}\n\n[ویدئو پیوست شد: ${selectedFile.name}]`
-            : `[ویدئو پیوست شد: ${selectedFile.name}]`;
-    }
+            color: #666;
+
+            font-size: 10px;
+
+            margin-top: 7px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        /* =====================================================
+           MOBILE
+        ===================================================== */
+
+        @media (max-width: 750px) {
+
+            .sidebar {
+                display: none;
+            }
+
+            .composer-area {
+                right: 0;
+            }
+
+            .chat-inner {
+                width: calc(100% - 22px);
+
+                padding-top: 20px;
+            }
+
+            .composer {
+                width: calc(100% - 8px);
+            }
+
+            .topbar {
+                padding:
+                    0
+                    14px;
+            }
+
+            .welcome h1 {
+                font-size: 24px;
+            }
+
+            .message-body {
+                font-size: 14px;
+            }
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- =====================================================
+         SIDEBAR
+    ====================================================== -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+
+            <div class="brand-logo">
+                B
+            </div>
+
+            <span>
+                BEHRAD AI
+            </span>
+
+        </div>
+
+        <button
+            class="new-chat"
+            id="newChatButton"
+        >
+            ＋ گفتگوی جدید
+        </button>
+
+        <div class="history-title">
+            تاریخچه
+        </div>
+
+        <div
+            class="history"
+            id="history"
+        ></div>
+
+        <div class="sidebar-footer">
+            BEHRAD M PLAYER
+        </div>
+
+    </aside>
 
 
-    // ================================
-    // USER MESSAGE
-    // ================================
+    <!-- =====================================================
+         MAIN
+    ====================================================== -->
 
-    const userMessage = {
-        role: "user",
+    <main class="main">
 
-        content:
-            typeof userContent === "string"
-            ? userContent
-            : (
-                text ||
-                `📎 ${selectedFile?.name || "فایل"}`
+        <header class="topbar">
+
+            <div>
+
+                <span class="online-dot"></span>
+
+                <span class="model-name">
+                    Space Bunny Alpha
+                </span>
+
+                <span class="model-status">
+                    آنلاین
+                </span>
+
+            </div>
+
+            <div>
+                BEHRAD AI
+            </div>
+
+        </header>
+
+
+        <section
+            class="chat"
+            id="chat"
+        >
+
+            <div
+                class="chat-inner"
+                id="chatInner"
+            >
+
+                <div
+                    class="welcome"
+                    id="welcome"
+                >
+
+                    <div class="welcome-logo">
+                        B
+                    </div>
+
+                    <h1>
+                        سلام، من BEHRAD AI هستم 👋
+                    </h1>
+
+                    <p>
+                        چه کاری برات انجام بدم؟
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             COMPOSER
+        ================================================== -->
+
+        <div class="composer-area">
+
+            <div class="composer">
+
+                <div
+                    class="attachment-preview"
+                    id="attachmentPreview"
+                >
+
+                    <span id="attachmentName">
+                        فایل انتخاب شد
+                    </span>
+
+                    <button
+                        class="remove-file"
+                        id="removeFile"
+                        type="button"
+                    >
+                        ×
+                    </button>
+
+                </div>
+
+
+                <div class="composer-row">
+
+                    <button
+                        class="attach-button"
+                        id="attachButton"
+                        type="button"
+                        title="آپلود عکس یا ویدئو"
+                    >
+                        ＋
+                    </button>
+
+
+                    <textarea
+                        id="input"
+                        rows="1"
+                        placeholder="پیامت رو بنویس..."
+                    ></textarea>
+
+
+                    <button
+                        class="send-button"
+                        id="sendButton"
+                        type="button"
+                        title="ارسال"
+                    >
+                        ➤
+                    </button>
+
+                </div>
+
+                <div class="composer-note">
+                    BEHRAD AI ممکن است اشتباه کند؛ اطلاعات مهم را بررسی کن.
+                </div>
+
+            </div>
+
+        </div>
+
+        <input
+            id="fileInput"
+            type="file"
+            accept="image/*,video/*"
+        >
+
+    </main>
+
+</div>
+
+
+<script>
+
+"use strict";
+
+/* =========================================================
+   CONFIG
+========================================================= */
+
+const STORAGE_KEY = "behrad_ai_professional_v4";
+
+const MAX_HISTORY = 12;
+
+
+/* =========================================================
+   DOM
+========================================================= */
+
+const input =
+    document.getElementById("input");
+
+const sendButton =
+    document.getElementById("sendButton");
+
+const attachButton =
+    document.getElementById("attachButton");
+
+const fileInput =
+    document.getElementById("fileInput");
+
+const removeFile =
+    document.getElementById("removeFile");
+
+const attachmentPreview =
+    document.getElementById("attachmentPreview");
+
+const attachmentName =
+    document.getElementById("attachmentName");
+
+const chat =
+    document.getElementById("chat");
+
+const chatInner =
+    document.getElementById("chatInner");
+
+const history =
+    document.getElementById("history");
+
+const welcome =
+    document.getElementById("welcome");
+
+const newChatButton =
+    document.getElementById("newChatButton");
+
+
+/* =========================================================
+   STATE
+========================================================= */
+
+let messages = [];
+
+let selectedFile = null;
+
+let isSending = false;
+
+
+/* =========================================================
+   MARKDOWN
+========================================================= */
+
+if (window.marked) {
+
+    marked.setOptions({
+        breaks: true,
+        gfm: true
+    });
+
+}
+
+
+/* =========================================================
+   LOAD
+========================================================= */
+
+function loadMessages() {
+
+    try {
+
+        const saved =
+            localStorage.getItem(STORAGE_KEY);
+
+        if (!saved) {
+            return [];
+        }
+
+        const parsed =
+            JSON.parse(saved);
+
+        if (!Array.isArray(parsed)) {
+            return [];
+        }
+
+        return parsed
+            .filter(
+                item =>
+                    item &&
+                    (
+                        item.role === "user" ||
+                        item.role === "assistant"
+                    )
             )
+            .slice(-MAX_HISTORY);
+
+    } catch (error) {
+
+        console.error(
+            "LOAD ERROR:",
+            error
+        );
+
+        return [];
+    }
+}
+
+
+/* =========================================================
+   SAVE
+========================================================= */
+
+function saveMessages() {
+
+    try {
+
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(
+                messages.slice(-MAX_HISTORY)
+            )
+        );
+
+    } catch (error) {
+
+        console.error(
+            "SAVE ERROR:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   CLEAR FILE
+========================================================= */
+
+function clearFile() {
+
+    selectedFile = null;
+
+    fileInput.value = "";
+
+    attachmentPreview
+        .classList
+        .remove("active");
+
+}
+
+
+/* =========================================================
+   FILE TO DATA URL
+========================================================= */
+
+function fileToDataURL(file) {
+
+    return new Promise(
+        (resolve, reject) => {
+
+            const reader =
+                new FileReader();
+
+            reader.onload =
+                () => resolve(reader.result);
+
+            reader.onerror =
+                () => reject(
+                    new Error(
+                        "خواندن فایل ناموفق بود."
+                    )
+                );
+
+            reader.readAsDataURL(file);
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   MARKDOWN RENDER
+========================================================= */
+
+function renderMarkdown(text) {
+
+    if (!text) {
+        return "";
+    }
+
+    if (!window.marked) {
+
+        return escapeHTML(text)
+            .replace(
+                /\n/g,
+                "<br>"
+            );
+
+    }
+
+    const html =
+        marked.parse(text);
+
+    return DOMPurify.sanitize(
+        html,
+        {
+            ADD_ATTR: [
+                "target",
+                "rel"
+            ]
+        }
+    );
+
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
+
+function escapeHTML(text) {
+
+    const div =
+        document.createElement("div");
+
+    div.textContent = text;
+
+    return div.innerHTML;
+
+}
+
+
+/* =========================================================
+   COPY BUTTONS
+========================================================= */
+
+function addCopyButtons(container) {
+
+    const blocks =
+        container.querySelectorAll(
+            "pre"
+        );
+
+    blocks.forEach(
+        pre => {
+
+            if (
+                pre.querySelector(
+                    ".code-copy"
+                )
+            ) {
+                return;
+            }
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+            button.className =
+                "code-copy";
+
+            button.type =
+                "button";
+
+            button.textContent =
+                "کپی کد";
+
+            button.addEventListener(
+                "click",
+                async () => {
+
+                    const code =
+                        pre.querySelector(
+                            "code"
+                        );
+
+                    if (!code) {
+                        return;
+                    }
+
+                    try {
+
+                        await navigator.clipboard.writeText(
+                            code.innerText
+                        );
+
+                        button.textContent =
+                            "کپی شد ✓";
+
+                        setTimeout(
+                            () => {
+                                button.textContent =
+                                    "کپی کد";
+                            },
+                            1500
+                        );
+
+                    } catch {
+
+                        button.textContent =
+                            "کپی نشد";
+
+                    }
+
+                }
+            );
+
+            pre.appendChild(button);
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   RENDER MESSAGE
+========================================================= */
+
+function renderMessage(message) {
+
+    const row =
+        document.createElement(
+            "div"
+        );
+
+    row.className =
+        `message ${message.role}`;
+
+    const avatar =
+        document.createElement(
+            "div"
+        );
+
+    avatar.className =
+        "message-avatar";
+
+    avatar.textContent =
+        message.role === "user"
+            ? "شما"
+            : "AI";
+
+
+    const body =
+        document.createElement(
+            "div"
+        );
+
+    body.className =
+        "message-body";
+
+
+    if (message.role === "assistant") {
+
+        body.innerHTML =
+            renderMarkdown(
+                message.content || ""
+            );
+
+        addCopyButtons(body);
+
+    } else {
+
+        /*
+         * پیام کاربر را به عنوان متن خام نمایش می‌دهیم
+         * تا HTML اجرا نشود.
+         */
+
+        if (
+            typeof message.content === "string"
+        ) {
+
+            body.textContent =
+                message.content;
+
+        } else {
+
+            body.textContent =
+                "📎 فایل پیوست شد.";
+
+        }
+
+    }
+
+
+    row.appendChild(avatar);
+
+    row.appendChild(body);
+
+    chatInner.appendChild(row);
+
+    return {
+        row,
+        content: body
     };
 
+}
 
-    messages.push(userMessage);
 
-    renderMessage(userMessage);
+/* =========================================================
+   RENDER ALL
+========================================================= */
 
-    renderHistory();
+function renderAll() {
+
+    chatInner.innerHTML = "";
+
+    if (!messages.length) {
+
+        chatInner.appendChild(
+            welcome
+        );
+
+        welcome.style.display =
+            "flex";
+
+        return;
+
+    }
+
+    welcome.style.display =
+        "none";
+
+    messages.forEach(
+        message => {
+            renderMessage(message);
+        }
+    );
 
     scrollBottom();
 
-
-    input.value = "";
-    input.style.height = "auto";
-
-    clearFile();
+}
 
 
-    // ================================
-    // THINKING WAVE
-    // ================================
+/* =========================================================
+   HISTORY
+========================================================= */
 
-    const thinkingRow =
-        document.createElement("div");
+function renderHistory() {
 
-    thinkingRow.className =
+    history.innerHTML = "";
+
+    messages
+        .filter(
+            message =>
+                message.role === "user"
+        )
+        .slice()
+        .reverse()
+        .slice(0, 20)
+        .forEach(
+            message => {
+
+                const item =
+                    document.createElement(
+                        "div"
+                    );
+
+                item.className =
+                    "history-item";
+
+                let title =
+                    typeof message.content === "string"
+                        ? message.content
+                        : "📎 فایل";
+
+                title =
+                    title
+                        .replace(/\n/g, " ")
+                        .trim();
+
+                if (!title) {
+                    title = "گفتگوی جدید";
+                }
+
+                item.textContent =
+                    title.slice(0, 50);
+
+                item.addEventListener(
+                    "click",
+                    () => {
+
+                        /*
+                         * فعلاً تاریخچه در همان گفتگوی جاری
+                         * قابل مشاهده است.
+                         */
+
+                        scrollBottom();
+
+                    }
+                );
+
+                history.appendChild(
+                    item
+                );
+
+            }
+        );
+
+}
+
+
+/* =========================================================
+   SCROLL
+========================================================= */
+
+function scrollBottom() {
+
+    requestAnimationFrame(
+        () => {
+
+            chat.scrollTop =
+                chat.scrollHeight;
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   THINKING UI
+========================================================= */
+
+function createThinkingRow() {
+
+    const row =
+        document.createElement(
+            "div"
+        );
+
+    row.className =
         "message assistant";
 
-    thinkingRow.innerHTML = `
+    row.innerHTML = `
 
-        <div class="avatar">
+        <div class="message-avatar">
             AI
         </div>
 
-        <div class="message-content">
+        <div class="message-body">
 
             <div class="thinking">
-
-                <div class="thinking-label">
-                    در حال فکر کردن...
-                </div>
 
                 <div class="wave">
 
@@ -130,14 +1578,11 @@ async function sendMessage(){
                     <span></span>
                     <span></span>
                     <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
 
+                </div>
+
+                <div class="thinking-text">
+                    در حال فکر کردن...
                 </div>
 
             </div>
@@ -145,31 +1590,308 @@ async function sendMessage(){
         </div>
     `;
 
-    chatInner.appendChild(
-        thinkingRow
+    chatInner.appendChild(row);
+
+    scrollBottom();
+
+    return row;
+
+}
+
+
+/* =========================================================
+   SEARCH STATUS
+========================================================= */
+
+function createSearchStatus(
+    output
+) {
+
+    let searchBox =
+        output.querySelector(
+            ".search-status"
+        );
+
+    if (!searchBox) {
+
+        searchBox =
+            document.createElement(
+                "div"
+            );
+
+        searchBox.className =
+            "search-status";
+
+        searchBox.innerHTML = `
+
+            <span class="search-icon">
+                🔎
+            </span>
+
+            <span>
+                در حال جستجو در وب...
+            </span>
+
+        `;
+
+        output.prepend(
+            searchBox
+        );
+
+    }
+
+    return searchBox;
+
+}
+
+
+/* =========================================================
+   SEND MESSAGE
+========================================================= */
+
+async function sendMessage() {
+
+    if (isSending) {
+        return;
+    }
+
+    const text =
+        input.value.trim();
+
+    if (
+        !text &&
+        !selectedFile
+    ) {
+        return;
+    }
+
+
+    isSending = true;
+
+    sendButton.disabled =
+        true;
+
+
+    if (welcome) {
+
+        welcome.style.display =
+            "none";
+
+    }
+
+
+    /* =====================================================
+       BUILD USER CONTENT
+    ===================================================== */
+
+    let apiContent = text;
+
+    let displayContent =
+        text;
+
+
+    /*
+     * IMAGE
+     */
+
+    if (
+        selectedFile &&
+        selectedFile.type.startsWith(
+            "image/"
+        )
+    ) {
+
+        try {
+
+            const dataURL =
+                await fileToDataURL(
+                    selectedFile
+                );
+
+            apiContent = [
+
+                {
+                    type: "text",
+
+                    text:
+                        text ||
+                        "این تصویر را بررسی کن."
+                },
+
+                {
+                    type: "image_url",
+
+                    image_url: {
+                        url: dataURL
+                    }
+
+                }
+
+            ];
+
+
+            displayContent =
+                text
+                    ? `${text}\n\n🖼️ ${selectedFile.name}`
+                    : `🖼️ ${selectedFile.name}`;
+
+        } catch (error) {
+
+            console.error(error);
+
+            isSending =
+                false;
+
+            sendButton.disabled =
+                false;
+
+            alert(
+                "خواندن تصویر ناموفق بود."
+            );
+
+            return;
+        }
+
+    }
+
+
+    /*
+     * VIDEO
+     *
+     * ویدئو مستقیماً به API فرستاده نمی‌شود،
+     * چون این مدل/Provider ممکن است video_url را
+     * رد کند.
+     */
+
+    else if (
+        selectedFile &&
+        selectedFile.type.startsWith(
+            "video/"
+        )
+    ) {
+
+        displayContent =
+            text
+                ? `${text}\n\n🎥 ویدئو پیوست شد: ${selectedFile.name}`
+                : `🎥 ویدئو پیوست شد: ${selectedFile.name}`;
+
+
+        apiContent =
+            text
+                ? `${text}\n\n[ویدئو پیوست شد: ${selectedFile.name}]`
+                : `[ویدئو پیوست شد: ${selectedFile.name}]`;
+
+    }
+
+
+    /* =====================================================
+       USER MESSAGE
+    ===================================================== */
+
+    const userMessage = {
+
+        role: "user",
+
+        content: displayContent
+
+    };
+
+
+    /*
+     * بلافاصله پیام کاربر را نشان می‌دهیم.
+     */
+
+    messages.push(
+        userMessage
     );
+
+    renderMessage(
+        userMessage
+    );
+
+    renderHistory();
 
     scrollBottom();
 
 
-    try{
+    /*
+     * پیام API جداست تا عکس بتواند به مدل برود.
+     */
 
-        // ================================
-        // API HISTORY
-        // ================================
+    const apiUserMessage = {
+
+        role: "user",
+
+        content: apiContent
+
+    };
+
+
+    input.value = "";
+
+    input.style.height =
+        "auto";
+
+
+    clearFile();
+
+
+    /* =====================================================
+       THINKING
+    ===================================================== */
+
+    const thinkingRow =
+        createThinkingRow();
+
+
+    try {
+
+        /*
+         * تاریخچه‌ای که به API می‌فرستیم
+         */
 
         const apiMessages =
             messages
-            .slice(-MAX_HISTORY)
-            .map(message => ({
-                role: message.role,
-                content: message.content
-            }));
+                .slice(
+                    -MAX_HISTORY
+                )
+                .map(
+                    (message, index, array) => {
+
+                        /*
+                         * برای آخرین پیام کاربر،
+                         * نسخه‌ی apiContent را می‌فرستیم.
+                         */
+
+                        if (
+                            index ===
+                            array.length - 1
+                            &&
+                            message.role === "user"
+                        ) {
+
+                            return {
+                                role: "user",
+                                content: apiContent
+                            };
+
+                        }
+
+                        return {
+                            role:
+                                message.role,
+
+                            content:
+                                message.content
+                        };
+
+                    }
+                );
 
 
-        // ================================
-        // STREAM REQUEST
-        // ================================
+        /* =================================================
+           REQUEST
+        ================================================= */
 
         const response =
             await fetch(
@@ -179,58 +1901,94 @@ async function sendMessage(){
 
                     headers: {
                         "Content-Type":
-                            "application/json"
+                            "application/json",
+
+                        "Accept":
+                            "text/event-stream"
                     },
 
-                    body: JSON.stringify({
-                        messages: apiMessages
-                    })
+                    body:
+                        JSON.stringify({
+                            messages:
+                                apiMessages
+                        })
                 }
             );
 
 
-        if(!response.ok){
+        /*
+         * خطای HTTP
+         */
+
+        if (!response.ok) {
 
             const raw =
                 await response.text();
 
-            let message =
-                `سرور پاسخ نامعتبر داد. ${response.status} HTTP`;
+            let errorMessage =
+                `سرور خطا داد: ${response.status} HTTP`;
 
-            try{
+            try {
 
                 const data =
                     JSON.parse(raw);
 
-                if(data.error){
-                    message = data.error;
+                if (data.error) {
+                    errorMessage =
+                        data.error;
                 }
 
-            }catch(e){}
+            } catch {
 
-            throw new Error(message);
-        }
+                if (
+                    raw &&
+                    raw.length < 1000
+                ) {
 
+                    errorMessage =
+                        raw;
 
-        if(!response.body){
+                }
+
+            }
 
             throw new Error(
-                "Streaming در مرورگر در دسترس نیست."
+                errorMessage
             );
+
         }
 
 
-        // موج را حذف کن
+        /*
+         * Browser Streaming
+         */
+
+        if (!response.body) {
+
+            throw new Error(
+                "مرورگر Streaming را پشتیبانی نمی‌کند."
+            );
+
+        }
+
+
+        /*
+         * موج را حذف کن
+         */
+
         thinkingRow.remove();
 
 
-        // ================================
-        // ASSISTANT MESSAGE
-        // ================================
+        /* =================================================
+           ASSISTANT MESSAGE
+        ================================================= */
 
         const assistantMessage = {
+
             role: "assistant",
+
             content: ""
+
         };
 
 
@@ -244,36 +2002,40 @@ async function sendMessage(){
             assistantUI.content;
 
 
-        // ================================
-        // STREAM READER
-        // ================================
+        let fullText = "";
+
+        let buffer = "";
+
+        let searchBox = null;
+
 
         const reader =
             response.body.getReader();
 
         const decoder =
-            new TextDecoder("utf-8");
-
-        let buffer = "";
-
-        let fullText = "";
-
-        let searchBox = null;
+            new TextDecoder(
+                "utf-8"
+            );
 
 
-        // ================================
-        // STREAM LOOP
-        // ================================
+        let streamFinished =
+            false;
 
-        while(true){
+
+        /* =================================================
+           STREAM LOOP
+        ================================================= */
+
+        while (!streamFinished) {
 
             const {
                 value,
                 done
-            } = await reader.read();
+            } =
+                await reader.read();
 
 
-            if(done){
+            if (done) {
                 break;
             }
 
@@ -287,13 +2049,20 @@ async function sendMessage(){
                 );
 
 
-            // نرمال‌سازی CRLF
+            /*
+             * تبدیل CRLF به LF
+             */
+
             buffer =
                 buffer.replace(
                     /\r\n/g,
                     "\n"
                 );
 
+
+            /*
+             * Event های SSE
+             */
 
             const events =
                 buffer.split(
@@ -305,52 +2074,62 @@ async function sendMessage(){
                 events.pop() || "";
 
 
-            for(
+            for (
                 const event
                 of events
-            ){
+            ) {
 
                 const lines =
                     event.split("\n");
 
 
-                for(
+                for (
                     const line
                     of lines
-                ){
+                ) {
 
-                    if(
-                        !line.startsWith("data:")
-                    ){
+                    if (
+                        !line.startsWith(
+                            "data:"
+                        )
+                    ) {
                         continue;
                     }
 
 
                     const raw =
                         line
-                        .slice(5)
-                        .trim();
+                            .slice(5)
+                            .trim();
 
 
-                    if(!raw){
+                    if (!raw) {
                         continue;
                     }
 
 
-                    if(raw === "[DONE]"){
+                    if (
+                        raw === "[DONE]"
+                    ) {
+
+                        streamFinished =
+                            true;
+
                         continue;
+
                     }
 
 
                     let data;
 
-
-                    try{
+                    try {
 
                         data =
-                            JSON.parse(raw);
+                            JSON.parse(
+                                raw
+                            );
 
-                    }catch(error){
+                    } catch {
 
                         console.warn(
                             "Invalid SSE:",
@@ -358,41 +2137,23 @@ async function sendMessage(){
                         );
 
                         continue;
+
                     }
 
 
-                    // ============================
-                    // SEARCH
-                    // ============================
+                    /* =====================================
+                       SEARCH
+                    ===================================== */
 
-                    if(
-                        data.type === "search"
-                    ){
+                    if (
+                        data.type ===
+                        "search"
+                    ) {
 
-                        if(!searchBox){
-
-                            searchBox =
-                                document.createElement(
-                                    "div"
-                                );
-
-                            searchBox.className =
-                                "search-status active";
-
-                            searchBox.innerHTML = `
-                                <span class="search-icon">
-                                    🔎
-                                </span>
-
-                                <span>
-                                    در حال جستجو در وب...
-                                </span>
-                            `;
-
-                            output.prepend(
-                                searchBox
+                        searchBox =
+                            createSearchStatus(
+                                output
                             );
-                        }
 
 
                         const label =
@@ -405,33 +2166,48 @@ async function sendMessage(){
                             "در حال جستجو در وب...";
 
 
-                        if(
+                        if (
                             data.arguments
-                        ){
+                        ) {
 
-                            try{
+                            try {
 
                                 const args =
-                                    JSON.parse(
-                                        data.arguments
-                                    );
+                                    typeof data.arguments === "string"
+                                        ? JSON.parse(
+                                            data.arguments
+                                        )
+                                        : data.arguments;
 
 
-                                if(args.query){
+                                if (
+                                    args &&
+                                    args.query
+                                ) {
 
                                     query =
                                         `در حال جستجو برای «${args.query}»...`;
+
                                 }
 
-                            }catch(e){
+                            } catch {
 
-                                // ممکن است arguments تکه‌تکه آمده باشد
+                                /*
+                                 * arguments ممکن است
+                                 * در چند chunk بیاید.
+                                 */
+
                             }
+
                         }
 
 
-                        label.textContent =
-                            query;
+                        if (label) {
+
+                            label.textContent =
+                                query;
+
+                        }
 
 
                         scrollBottom();
@@ -439,34 +2215,43 @@ async function sendMessage(){
                     }
 
 
-                    // ============================
-                    // REASONING
-                    // ============================
+                    /* =====================================
+                       REASONING
+                    ===================================== */
 
-                    if(
-                        data.type === "reasoning"
-                    ){
+                    else if (
+                        data.type ===
+                        "reasoning"
+                    ) {
 
-                        // فعلاً متن reasoning را
-                        // نمایش نمی‌دهیم؛ موج باقی می‌ماند.
+                        /*
+                         * فعلاً reasoning خام نمایش داده نمی‌شود.
+                         * موج فکر کردن برای تجربه‌ی بهتر باقی می‌ماند.
+                         */
 
                         scrollBottom();
+
                     }
 
 
-                    // ============================
-                    // CONTENT
-                    // ============================
+                    /* =====================================
+                       CONTENT
+                    ===================================== */
 
-                    if(
-                        data.type === "content"
-                    ){
+                    else if (
+                        data.type ===
+                        "content"
+                    ) {
 
-                        if(searchBox){
+                        if (
+                            searchBox
+                        ) {
 
                             searchBox.remove();
 
-                            searchBox = null;
+                            searchBox =
+                                null;
+
                         }
 
 
@@ -490,66 +2275,113 @@ async function sendMessage(){
 
 
                         scrollBottom();
+
                     }
 
 
-                    // ============================
-                    // ERROR
-                    // ============================
+                    /* =====================================
+                       ERROR
+                    ===================================== */
 
-                    if(
-                        data.type === "error"
-                    ){
+                    else if (
+                        data.type ===
+                        "error"
+                    ) {
 
                         throw new Error(
                             data.message ||
                             "خطای Streaming"
                         );
+
                     }
+
+
+                    /* =====================================
+                       DONE
+                    ===================================== */
+
+                    else if (
+                        data.type ===
+                        "done"
+                    ) {
+
+                        streamFinished =
+                            true;
+
+                    }
+
                 }
+
             }
+
         }
 
 
-        // ================================
-        // FINAL
-        // ================================
+        /*
+         * Flush آخر decoder
+         */
 
-        if(!fullText.trim()){
+        buffer +=
+            decoder.decode();
+
+
+        /*
+         * اگر مدل متن برنگرداند
+         */
+
+        if (
+            !fullText.trim()
+        ) {
 
             fullText =
                 "مدل پاسخ متنی برنگرداند.";
 
             output.textContent =
                 fullText;
+
         }
 
 
+        /* =================================================
+           SAVE ASSISTANT
+        ================================================= */
+
         messages.push({
+
             role: "assistant",
+
             content: fullText
+
         });
 
 
-        save();
+        saveMessages();
 
         renderHistory();
 
         scrollBottom();
 
 
-    }catch(error){
+    } catch (error) {
 
         console.error(
-            "BEHRAD AI STREAM ERROR:",
+            "BEHRAD AI ERROR:",
             error
         );
 
 
-        thinkingRow.remove();
+        if (
+            thinkingRow &&
+            thinkingRow.parentNode
+        ) {
+
+            thinkingRow.remove();
+
+        }
 
 
-        renderMessage({
+        const errorMessage = {
+
             role: "assistant",
 
             content:
@@ -558,18 +2390,202 @@ async function sendMessage(){
                     error.message ||
                     "خطای ناشناخته"
                 )
-        });
+
+        };
+
+
+        renderMessage(
+            errorMessage
+        );
 
 
         scrollBottom();
 
+    } finally {
 
-    }finally{
+        isSending =
+            false;
 
-        isSending = false;
-
-        sendButton.disabled = false;
+        sendButton.disabled =
+            false;
 
         input.focus();
+
     }
+
 }
+
+
+/* =========================================================
+   NEW CHAT
+========================================================= */
+
+function newChat() {
+
+    if (isSending) {
+        return;
+    }
+
+    messages = [];
+
+    saveMessages();
+
+    clearFile();
+
+    input.value = "";
+
+    input.style.height =
+        "auto";
+
+    renderAll();
+
+    renderHistory();
+
+    input.focus();
+
+}
+
+
+/* =========================================================
+   AUTO RESIZE
+========================================================= */
+
+input.addEventListener(
+    "input",
+    () => {
+
+        input.style.height =
+            "auto";
+
+        input.style.height =
+            Math.min(
+                input.scrollHeight,
+                180
+            ) + "px";
+
+    }
+);
+
+
+/* =========================================================
+   ENTER TO SEND
+========================================================= */
+
+input.addEventListener(
+    "keydown",
+    event => {
+
+        if (
+            event.key === "Enter" &&
+            !event.shiftKey
+        ) {
+
+            event.preventDefault();
+
+            sendMessage();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   SEND BUTTON
+========================================================= */
+
+sendButton.addEventListener(
+    "click",
+    sendMessage
+);
+
+
+/* =========================================================
+   ATTACH BUTTON
+========================================================= */
+
+attachButton.addEventListener(
+    "click",
+    () => {
+
+        if (isSending) {
+            return;
+        }
+
+        fileInput.click();
+
+    }
+);
+
+
+/* =========================================================
+   FILE SELECT
+========================================================= */
+
+fileInput.addEventListener(
+    "change",
+    () => {
+
+        const file =
+            fileInput.files &&
+            fileInput.files[0];
+
+
+        if (!file) {
+            return;
+        }
+
+
+        selectedFile =
+            file;
+
+
+        attachmentName.textContent =
+            `📎 ${file.name}`;
+
+
+        attachmentPreview
+            .classList
+            .add("active");
+
+    }
+);
+
+
+/* =========================================================
+   REMOVE FILE
+========================================================= */
+
+removeFile.addEventListener(
+    "click",
+    clearFile
+);
+
+
+/* =========================================================
+   NEW CHAT BUTTON
+========================================================= */
+
+newChatButton.addEventListener(
+    "click",
+    newChat
+);
+
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
+
+messages =
+    loadMessages();
+
+renderAll();
+
+renderHistory();
+
+input.focus();
+
+</script>
+
+</body>
+    </html>
