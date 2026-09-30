@@ -531,7 +531,7 @@ textarea::placeholder{
         </div>
 
         <div class="model">
-            Space Bunny Alpha
+            Qwen3.8 27B Free
         </div>
 
     </header>
@@ -591,20 +591,48 @@ textarea::placeholder{
    CONFIG
 ===================================================== */
 
-const STORAGE_KEY = "behrad_ai_fast_v4";
+/*
+ * مهم:
+ * چون BEHRAD AI روی GitHub Pages اجرا می‌شود،
+ * نباید /api/chat را نسبی صدا بزنیم.
+ *
+ * درخواست مستقیماً به Render می‌رود.
+ */
 
-const chat = document.getElementById("chat");
-const chatInner = document.getElementById("chatInner");
+const API_BASE_URL =
+    "https://k6k83zh1yv.onrender.com";
 
-const input = document.getElementById("messageInput");
-const sendButton = document.getElementById("sendButton");
+const CHAT_API_URL =
+    `${API_BASE_URL}/api/chat`;
 
-const fileInput = document.getElementById("fileInput");
-const preview = document.getElementById("preview");
+
+const STORAGE_KEY =
+    "behrad_ai_fast_v4";
+
+
+const chat =
+    document.getElementById("chat");
+
+const chatInner =
+    document.getElementById("chatInner");
+
+const input =
+    document.getElementById("messageInput");
+
+const sendButton =
+    document.getElementById("sendButton");
+
+const fileInput =
+    document.getElementById("fileInput");
+
+const preview =
+    document.getElementById("preview");
 
 
 let messages = [];
+
 let selectedFile = null;
+
 let waiting = false;
 
 
@@ -657,7 +685,8 @@ function load(){
             return;
         }
 
-        messages = data.slice(-10);
+        messages =
+            data.slice(-10);
 
         renderAll();
 
@@ -725,7 +754,12 @@ function addCopyButtons(container){
         .querySelectorAll("pre")
         .forEach(pre => {
 
-            if(pre.parentElement.classList.contains("code-wrap")){
+            if(
+                pre.parentElement &&
+                pre.parentElement.classList.contains(
+                    "code-wrap"
+                )
+            ){
                 return;
             }
 
@@ -749,6 +783,9 @@ function addCopyButtons(container){
 
             button.className =
                 "copy-code";
+
+            button.type =
+                "button";
 
             button.textContent =
                 "کپی";
@@ -844,7 +881,9 @@ function renderAll(){
 
     chatInner.innerHTML = "";
 
-    for(const message of messages){
+    for(
+        const message of messages
+    ){
 
         renderMessage(
             message
@@ -995,7 +1034,9 @@ async function smoothReveal(
                     8
                 )
         );
+
     }
+
 }
 
 
@@ -1057,6 +1098,69 @@ function fileToDataURL(file){
 
         }
     );
+
+}
+
+
+/* =====================================================
+   API ERROR
+===================================================== */
+
+function getServerErrorMessage(
+    status,
+    data
+){
+
+    if(
+        data &&
+        data.error
+    ){
+
+        if(
+            typeof data.error === "string"
+        ){
+
+            return data.error;
+
+        }
+
+        if(
+            typeof data.error === "object" &&
+            data.error.message
+        ){
+
+            return data.error.message;
+
+        }
+
+    }
+
+    if(status === 405){
+
+        return "روش ارسال درخواست به سرور اشتباه است (HTTP 405).";
+
+    }
+
+    if(status === 401){
+
+        return "احراز هویت سرور مشکل دارد.";
+
+    }
+
+    if(status === 429){
+
+        return "مدل فعلاً درخواست‌های زیادی دریافت کرده. چند ثانیه بعد دوباره امتحان کن.";
+
+    }
+
+    if(status >= 500){
+
+        return "سرور BEHRAD AI نتوانست پاسخ مدل را دریافت کند.";
+
+    }
+
+    return `خطای سرور HTTP ${status}`;
+
 }
 
 
@@ -1067,20 +1171,28 @@ function fileToDataURL(file){
 async function sendMessage(){
 
     if(waiting){
+
         return;
+
     }
 
     const text =
         input.value.trim();
 
-    if(!text && !selectedFile){
+    if(
+        !text &&
+        !selectedFile
+    ){
+
         return;
+
     }
 
     waiting = true;
 
     sendButton.disabled =
         true;
+
 
     /* ---------------------------------------------
        Prepare user message
@@ -1091,6 +1203,7 @@ async function sendMessage(){
 
     let apiContent =
         text;
+
 
     if(selectedFile){
 
@@ -1116,6 +1229,7 @@ async function sendMessage(){
 
                     {
                         type:"text",
+
                         text:
                             text ||
                             "این تصویر را بررسی کن."
@@ -1123,6 +1237,7 @@ async function sendMessage(){
 
                     {
                         type:"image_url",
+
                         image_url:{
                             url:dataURL
                         }
@@ -1130,7 +1245,12 @@ async function sendMessage(){
 
                 ];
 
-            }catch{
+            }catch(error){
+
+                console.error(
+                    "Image read error:",
+                    error
+                );
 
                 visibleText =
                     text ||
@@ -1144,16 +1264,17 @@ async function sendMessage(){
 
         }else{
 
+            /*
+             * در نسخه فعلی، فایل ویدئویی خام را
+             * مستقیماً به API نمی‌فرستیم.
+             *
+             * این کار جلوی خطاهای Provider را می‌گیرد.
+             */
+
             visibleText =
                 text
                 ? `${text}\n🎥 ${selectedFile.name}`
                 : `🎥 ${selectedFile.name}`;
-
-            /*
-             * فعلاً ویدیو را به‌صورت فایل خام
-             * به OpenRouter نمی‌فرستیم تا دوباره
-             * خطای Provider ایجاد نکند.
-             */
 
             apiContent =
                 text
@@ -1166,7 +1287,7 @@ async function sendMessage(){
 
 
     /* ---------------------------------------------
-       Add user message immediately
+       Add user message
     --------------------------------------------- */
 
     const userMessage = {
@@ -1181,6 +1302,7 @@ async function sendMessage(){
 
     };
 
+
     messages.push(
         userMessage
     );
@@ -1188,17 +1310,21 @@ async function sendMessage(){
     messages =
         messages.slice(-10);
 
+
     renderMessage(
         userMessage
     );
 
+
     save();
+
 
     input.value =
         "";
 
     input.style.height =
         "42px";
+
 
     selectedFile =
         null;
@@ -1212,6 +1338,7 @@ async function sendMessage(){
     preview.textContent =
         "";
 
+
     scrollBottom();
 
 
@@ -1223,6 +1350,11 @@ async function sendMessage(){
 
 
     try{
+
+        /*
+         * فقط پیام‌های واقعی برای API
+         * فرستاده می‌شوند.
+         */
 
         const apiMessages =
             messages.map(
@@ -1239,14 +1371,21 @@ async function sendMessage(){
             );
 
 
+        /* -----------------------------------------
+           API REQUEST
+        ----------------------------------------- */
+
         const response =
             await fetch(
-                "/api/chat",
+                CHAT_API_URL,
                 {
                     method:"POST",
 
                     headers:{
                         "Content-Type":
+                            "application/json",
+
+                        "Accept":
                             "application/json"
                     },
 
@@ -1262,7 +1401,9 @@ async function sendMessage(){
         const raw =
             await response.text();
 
+
         let data = null;
+
 
         try{
 
@@ -1274,7 +1415,7 @@ async function sendMessage(){
         }catch{
 
             console.error(
-                "SERVER RAW:",
+                "SERVER RAW RESPONSE:",
                 raw
             );
 
@@ -1287,22 +1428,57 @@ async function sendMessage(){
         }
 
 
+        /* -----------------------------------------
+           HTTP ERROR
+        ----------------------------------------- */
+
+        if(!response.ok){
+
+            throw new Error(
+                getServerErrorMessage(
+                    response.status,
+                    data
+                )
+            );
+
+        }
+
+
+        /* -----------------------------------------
+           NEW BACKEND FORMAT
+           ok + answer
+        ----------------------------------------- */
+
+        const reply =
+            data.answer ??
+            data.reply ??
+            (
+                data.response &&
+                typeof data.response === "string"
+                    ? data.response
+                    : null
+            );
+
+
         if(
-            !response.ok ||
-            !data.success
+            !data.ok &&
+            !data.success &&
+            !reply
         ){
 
             throw new Error(
-                data.error ||
-                `خطای سرور HTTP ${response.status}`
+                getServerErrorMessage(
+                    response.status,
+                    data
+                )
             );
 
         }
 
 
         if(
-            !data.reply ||
-            !String(data.reply).trim()
+            !reply ||
+            !String(reply).trim()
         ){
 
             throw new Error(
@@ -1315,9 +1491,9 @@ async function sendMessage(){
         hideThinking();
 
 
-        /* ---------------------------------------------
+        /* -----------------------------------------
            Assistant message
-        --------------------------------------------- */
+        ----------------------------------------- */
 
         const assistantMessage = {
 
@@ -1325,9 +1501,10 @@ async function sendMessage(){
                 "assistant",
 
             content:
-                String(data.reply)
+                String(reply)
 
         };
+
 
         messages.push(
             assistantMessage
@@ -1336,25 +1513,31 @@ async function sendMessage(){
         messages =
             messages.slice(-10);
 
+
         const row =
             document.createElement(
                 "div"
             );
 
+
         row.className =
             "message assistant";
+
 
         const content =
             document.createElement(
                 "div"
             );
 
+
         content.className =
             "message-content";
+
 
         row.appendChild(
             content
         );
+
 
         chatInner.appendChild(
             row
@@ -1374,9 +1557,12 @@ async function sendMessage(){
 
         hideThinking();
 
+
         console.error(
+            "BEHRAD AI ERROR:",
             error
         );
+
 
         const errorMessage = {
 
@@ -1388,6 +1574,7 @@ async function sendMessage(){
 
         };
 
+
         messages.push(
             errorMessage
         );
@@ -1395,9 +1582,11 @@ async function sendMessage(){
         messages =
             messages.slice(-10);
 
+
         renderMessage(
             errorMessage
         );
+
 
         save();
 
@@ -1475,6 +1664,7 @@ input.addEventListener(
 
 load();
 
+
 if(messages.length === 0){
 
     messages.push({
@@ -1491,6 +1681,7 @@ if(messages.length === 0){
     renderAll();
 
 }
+
 
 input.focus();
 
