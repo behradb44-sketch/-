@@ -1,892 +1,926 @@
 import os
 import json
 import time
-import logging
-from datetime import datetime, timezone
-
 import requests
-from flask import Flask, request, jsonify, Response, stream_with_context
+
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 
 
-# ============================================================
+# =========================================================
 # BEHRAD AI
-# Streaming Backend
-# ============================================================
+# Backend powered by GapGPT API
+# =========================================================
 
 app = Flask(__name__)
 
-try:
-    app.json.ensure_ascii = False
-except Exception:
-    pass
-
-
-# ============================================================
+# ---------------------------------------------------------
 # CORS
-# ============================================================
+# ---------------------------------------------------------
 
 CORS(
     app,
-    resources={
-        r"/*": {
-            "origins": "*",
-            "methods": ["GET", "POST", "OPTIONS"],
-            "allow_headers": [
-                "Content-Type",
-                "Authorization",
-                "Accept",
-                "Cache-Control",
-                "X-Requested-With"
-            ],
-            "expose_headers": [
-                "Content-Type",
-                "Cache-Control"
-            ]
-        }
-    }
+    resources={r"/*": {"origins": "*"}},
+    methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 
-@app.after_request
-def add_cors_headers(response):
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = (
-        "Content-Type, Authorization, Accept, Cache-Control, X-Requested-With"
-    )
+# ---------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------
 
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
+GAPGPT_API_KEY = os.getenv("GAPGPT_API_KEY", "").strip()
 
-    return response
+GAPGPT_BASE_URL = os.getenv(
+    "GAPGPT_BASE_URL",
+    "https://api.gapgpt.app/v1"
+).rstrip("/")
 
-
-# ============================================================
-# LOGGING
-# ============================================================
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s"
+# مدل پیش‌فرض
+DEFAULT_MODEL = os.getenv(
+    "GAPGPT_MODEL",
+    "gpt-4o"
 )
 
-logger = logging.getLogger("BEHRAD_AI")
-
-
-# ============================================================
-# OPENROUTER
-# ============================================================
-
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-
-MODEL = "qwen/qwen3.8-27b:free"
-
-API_KEY = os.environ.get(
-    "OPENROUTER_API_KEY",
-    ""
-).strip()
-
-SITE_URL = os.environ.get(
-    "BEHRAD_AI_SITE_URL",
-    "https://k6k83zh1yv.onrender.com"
+# حداکثر توکن خروجی
+# مقدار منطقی برای جلوگیری از خطاهای provider
+DEFAULT_MAX_TOKENS = int(
+    os.getenv("GAPGPT_MAX_TOKENS", "16384")
 )
 
-APP_NAME = "BEHRAD AI"
+REQUEST_TIMEOUT = int(
+    os.getenv("GAPGPT_TIMEOUT", "180")
+)
 
 
-# ============================================================
-# SYSTEM PROMPT
-# ============================================================
+# ---------------------------------------------------------
+# System Prompt
+# ---------------------------------------------------------
 
 SYSTEM_PROMPT = """
-تو BEHRAD AI هستی؛ دستیار هوش مصنوعی رسمی پروژه BEHRAD AI.
+تو BEHRAD AI هستی؛ دستیار هوش مصنوعی پروژه BEHRAD M PLAYER.
 
-سازنده پروژه:
-بهراد محمدی
-Behrad Mohammadi
+قوانین اصلی:
 
-برند:
-BEHRAD M PLAYER
-
-قوانین:
-
-1. فارسی و انگلیسی را به‌خوبی پشتیبانی کن.
-2. اگر کاربر فارسی صحبت کرد، فارسی پاسخ بده.
-3. لحن دوستانه، طبیعی و حرفه‌ای داشته باش.
-4. برای کاربر مبتدی، مفاهیم را از صفر تا صد توضیح بده.
-5. اگر کاربر کد خواست، کد واقعی و قابل اجرا بده.
-6. اگر پروژه چند فایل دارد، نام فایل‌ها را مشخص کن.
-7. برای کدهای بزرگ، پاسخ را منطقی و مرحله‌بندی‌شده ارائه کن.
-8. کد ناقص یا pseudo-code را به‌عنوان نسخه نهایی معرفی نکن.
-9. قبل از ارائه کد، منطق آن را بررسی کن.
-10. اگر چیزی را نمی‌دانی، حدس نزن.
-11. درباره قیمت، اخبار، وضعیت محصولات، نسخه نرم‌افزار و اطلاعات لحظه‌ای از Web Search استفاده کن.
-12. اگر اطلاعات لحظه‌ای قابل تأیید نیست، آن را به‌عنوان حقیقت فعلی اعلام نکن.
-13. لینک و منبع جعلی نساز.
-14. اگر از Web Search استفاده کردی، نتایج را با توجه به اطلاعات واقعی وب تفسیر کن.
-15. محتوای خانواده‌پسند ارائه کن.
-16. در برنامه‌نویسی به Python، JavaScript، HTML، CSS، Unity، بازی‌سازی و توسعه نرم‌افزار کمک کن.
-17. اگر پاسخ بسیار طولانی است، آن را با ساختار مناسب و بخش‌بندی‌شده ارائه کن.
-18. پاسخ را بی‌دلیل کوتاه نکن.
-19. اگر محدودیت فنی برای طول پاسخ وجود دارد، به‌جای قطع ناگهانی، واضح بگو که می‌توان ادامه پاسخ را تولید کرد.
-20. هرگز ادعا نکن کاری انجام شده که واقعاً انجام نشده است.
-
-برای اطلاعات به‌روز، در صورت در دسترس بودن ابزار، از Web Search استفاده کن.
+1. اگر کاربر فارسی صحبت کرد، فارسی روان و طبیعی جواب بده.
+2. اگر کاربر انگلیسی صحبت کرد، انگلیسی جواب بده مگر اینکه درخواست دیگری داشته باشد.
+3. پاسخ‌ها را واضح، دقیق و کاربردی ارائه کن.
+4. برای کدنویسی، تا جای ممکن کد کامل و قابل اجرا ارائه بده.
+5. اگر کاربر درباره بهراد محمدی یا BEHRAD M PLAYER پرسید:
+   - نام سازنده: بهراد محمدی
+   - برند: BEHRAD M PLAYER
+   را در صورت مرتبط بودن در نظر بگیر.
+6. اطلاعاتی را که از آن مطمئن نیستی به‌عنوان حقیقت قطعی بیان نکن.
+7. در پاسخ‌های طولانی ساختار مناسب با تیتر و فهرست ایجاد کن.
+8. از Markdown برای خوانایی استفاده کن.
+9. پاسخ‌ها خانواده‌پسند باشند.
+10. اگر درخواست کاربر به اطلاعات لحظه‌ای نیاز دارد و ابزار جست‌وجوی وب در دسترس نیست،
+    ادعا نکن که اطلاعات را به‌صورت زنده بررسی کرده‌ای.
+11. هدف تو کمک دقیق، دوستانه و کاربردی به کاربر است.
 """
 
 
-# ============================================================
-# HELPERS
-# ============================================================
+# ---------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------
 
-def now_iso():
-    return datetime.now(timezone.utc).isoformat()
+def api_error(message, status=500, extra=None):
+    data = {
+        "ok": False,
+        "error": message,
+    }
+
+    if extra:
+        data.update(extra)
+
+    return jsonify(data), status
 
 
-def sse(data):
+def clean_messages(messages):
     """
-    ساخت یک Server-Sent Event.
+    پیام‌های ورودی را برای ارسال به GapGPT آماده می‌کند.
     """
-    return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
-
-def sanitize_messages(messages):
     if not isinstance(messages, list):
         return []
 
-    allowed_roles = {
-        "system",
-        "user",
-        "assistant",
-        "tool"
-    }
-
     cleaned = []
 
-    for item in messages:
-        if not isinstance(item, dict):
+    for msg in messages:
+
+        if not isinstance(msg, dict):
             continue
 
-        role = item.get("role")
+        role = msg.get("role")
 
-        if role not in allowed_roles:
+        if role not in ("system", "user", "assistant"):
             continue
 
-        if "content" not in item:
+        content = msg.get("content")
+
+        if content is None:
             continue
 
-        cleaned.append({
-            "role": role,
-            "content": item["content"]
-        })
+        # رشته ساده
+        if isinstance(content, str):
+
+            cleaned.append({
+                "role": role,
+                "content": content
+            })
+
+            continue
+
+        # محتوای چندبخشی OpenAI-style
+        if isinstance(content, list):
+
+            valid_parts = []
+
+            for part in content:
+
+                if not isinstance(part, dict):
+                    continue
+
+                part_type = part.get("type")
+
+                # متن
+                if part_type == "text":
+
+                    text = part.get("text", "")
+
+                    if text:
+                        valid_parts.append({
+                            "type": "text",
+                            "text": str(text)
+                        })
+
+                # تصویر
+                elif part_type == "image_url":
+
+                    image_url = part.get("image_url")
+
+                    if isinstance(image_url, dict):
+                        url = image_url.get("url")
+
+                        if url:
+                            valid_parts.append({
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": url
+                                }
+                            })
+
+            if valid_parts:
+
+                cleaned.append({
+                    "role": role,
+                    "content": valid_parts
+                })
 
     return cleaned
 
 
-def normalize_content(content):
-    if content is None:
-        return ""
+def build_messages(user_messages):
+    """
+    System prompt را به ابتدای conversation اضافه می‌کند.
+    """
 
-    if isinstance(content, str):
-        return content
+    messages = []
 
-    if isinstance(content, list):
-        result = []
+    messages.append({
+        "role": "system",
+        "content": SYSTEM_PROMPT
+    })
 
-        for item in content:
-            if isinstance(item, str):
-                result.append(item)
-                continue
+    messages.extend(clean_messages(user_messages))
 
-            if isinstance(item, dict):
-                value = item.get("text")
+    return messages
 
-                if isinstance(value, str):
-                    result.append(value)
 
-        return "".join(result)
+def extract_error(response):
 
-    if isinstance(content, dict):
-        value = content.get("text")
+    try:
+        data = response.json()
+
+        if isinstance(data, dict):
+
+            error = data.get("error")
+
+            if isinstance(error, dict):
+
+                message = (
+                    error.get("message")
+                    or error.get("error")
+                    or error.get("type")
+                )
+
+                if message:
+                    return str(message)
+
+            if isinstance(error, str):
+                return error
+
+            message = data.get("message")
+
+            if message:
+                return str(message)
+
+    except Exception:
+        pass
+
+    try:
+        text = response.text.strip()
+
+        if text:
+            return text[:2000]
+
+    except Exception:
+        pass
+
+    return "خطای ناشناخته از GapGPT دریافت شد."
+
+
+def extract_answer(data):
+
+    if not isinstance(data, dict):
+        return None
+
+    # OpenAI Chat Completions
+    choices = data.get("choices")
+
+    if isinstance(choices, list) and choices:
+
+        first = choices[0]
+
+        if isinstance(first, dict):
+
+            message = first.get("message")
+
+            if isinstance(message, dict):
+
+                content = message.get("content")
+
+                if isinstance(content, str):
+                    return content
+
+            # بعضی providerها
+            text = first.get("text")
+
+            if isinstance(text, str):
+                return text
+
+    # fallback
+    for key in ("answer", "reply", "response", "output"):
+
+        value = data.get(key)
 
         if isinstance(value, str):
             return value
 
-    return str(content)
+    return None
 
 
-def is_current_request(messages):
-    """
-    تشخیص درخواست‌هایی که احتمالاً به وب نیاز دارند.
-    """
+# ---------------------------------------------------------
+# Health
+# ---------------------------------------------------------
 
-    chunks = []
-
-    for message in messages:
-        content = message.get("content", "")
-
-        if isinstance(content, str):
-            chunks.append(content)
-
-        elif isinstance(content, list):
-            for item in content:
-                if isinstance(item, dict):
-                    text_value = item.get("text")
-
-                    if isinstance(text_value, str):
-                        chunks.append(text_value)
-
-    text = " ".join(chunks).lower()
-
-    keywords = [
-        "الان",
-        "امروز",
-        "همین الان",
-        "فعلی",
-        "لحظه‌ای",
-        "لحظه ای",
-        "جدیدترین",
-        "آخرین",
-        "اخبار",
-        "خبر",
-        "قیمت",
-        "نرخ",
-        "دلار",
-        "یورو",
-        "طلا",
-        "سکه",
-        "بورس",
-        "سهام",
-        "موجودی",
-        "موجوده",
-        "چنده",
-        "در حال حاضر",
-        "سرچ",
-        "جستجو",
-        "وب",
-        "سایت",
-        "منبع",
-        "latest",
-        "today",
-        "current",
-        "right now",
-        "price",
-        "news",
-        "latest news",
-        "search",
-        "website",
-        "stock",
-        "exchange rate"
-    ]
-
-    return any(word in text for word in keywords)
-
-
-def build_payload(messages, use_web=True):
-    """
-    ساخت Payload رسمی OpenRouter.
-    """
-
-    payload = {
-        "model": MODEL,
-
-        "messages": messages,
-
-        # Streaming واقعی
-        "stream": True,
-
-        # Qwen reasoning
-        "reasoning": {
-            "effort": "high",
-            "exclude": True
-        },
-
-        "temperature": 0.7,
-
-        "top_p": 0.95,
-
-        # Qwen3.8 27B Free فعلاً تا 262K completion
-        # را در صفحه مدل اعلام می‌کند.
-        #
-        # عمداً 131072 می‌گذاریم تا درخواست‌های بسیار بزرگ
-        # قابل مدیریت‌تر باشند.
-        "max_tokens": 131072,
-
-        "tool_choice": "auto"
-    }
-
-    if use_web:
-        payload["tools"] = [
-            {
-                "type": "openrouter:web_search"
-            },
-            {
-                "type": "openrouter:web_fetch"
-            }
-        ]
-
-    return payload
-
-
-def headers():
-    return {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json",
-        "Accept": "text/event-stream",
-        "Cache-Control": "no-cache",
-
-        "HTTP-Referer": SITE_URL,
-        "X-Title": APP_NAME
-    }
-
-
-# ============================================================
-# NON-STREAMING TEST
-# ============================================================
-
-def normal_request(messages):
-    payload = build_payload(
-        messages,
-        use_web=False
-    )
-
-    payload["stream"] = False
-    payload["max_tokens"] = 4096
-
-    response = requests.post(
-        OPENROUTER_URL,
-        headers=headers(),
-        json=payload,
-        timeout=(20, 180)
-    )
-
-    if response.status_code >= 400:
-        try:
-            details = response.json()
-        except Exception:
-            details = response.text
-
-        raise RuntimeError(
-            f"OpenRouter HTTP {response.status_code}: {details}"
-        )
-
-    return response.json()
-
-
-def extract_normal_answer(data):
-    choices = data.get("choices", [])
-
-    if not choices:
-        return ""
-
-    message = choices[0].get("message", {})
-
-    return normalize_content(
-        message.get("content")
-    )
-
-
-# ============================================================
-# ROOT
-# ============================================================
-
-@app.route("/", methods=["GET", "OPTIONS"])
-def root():
-
-    if request.method == "OPTIONS":
-        return ("", 204)
+@app.route("/", methods=["GET"])
+def home():
 
     return jsonify({
-        "ok": True,
-        "service": APP_NAME,
-        "model": MODEL,
-        "streaming": True,
-        "message": "BEHRAD AI API is online 🚀"
+        "service": "BEHRAD AI",
+        "status": "online",
+        "provider": "GapGPT",
+        "api_configured": bool(GAPGPT_API_KEY),
+        "model": DEFAULT_MODEL,
+        "message": "BEHRAD AI backend is running 🚀"
     })
 
 
-# ============================================================
-# HEALTH
-# ============================================================
-
-@app.route("/health", methods=["GET", "OPTIONS"])
+@app.route("/health", methods=["GET"])
 def health():
-
-    if request.method == "OPTIONS":
-        return ("", 204)
 
     return jsonify({
         "ok": True,
         "status": "ok",
-        "service": APP_NAME,
-        "model": MODEL,
-        "api_key_configured": bool(API_KEY),
-
-        "streaming": True,
-
+        "service": "BEHRAD AI",
+        "provider": "GapGPT",
+        "api_key_configured": bool(GAPGPT_API_KEY),
+        "base_url": GAPGPT_BASE_URL,
+        "model": DEFAULT_MODEL,
         "features": {
             "text": True,
             "multilingual": True,
             "reasoning": True,
-            "tool_calling": True,
-            "web_search": True,
-            "web_fetch": True,
             "image": True,
-            "video": True
-        },
-
-        "time": now_iso()
+            "streaming": True
+        }
     })
 
 
-# ============================================================
-# TEST AI
-# ============================================================
+# ---------------------------------------------------------
+# OPTIONS
+# ---------------------------------------------------------
 
-@app.route(
-    "/api/test-ai",
-    methods=["GET", "POST", "OPTIONS"]
-)
+@app.route("/api/chat", methods=["OPTIONS"])
+def chat_options():
+
+    return Response(status=204)
+
+
+# ---------------------------------------------------------
+# GET /api/chat
+# ---------------------------------------------------------
+
+@app.route("/api/chat", methods=["GET"])
+def chat_get():
+
+    return jsonify({
+        "ok": True,
+        "service": "BEHRAD AI",
+        "provider": "GapGPT",
+        "method_required": "POST",
+        "message": "BEHRAD AI chat endpoint is online. Use POST to send messages."
+    })
+
+
+# ---------------------------------------------------------
+# Test API
+# ---------------------------------------------------------
+
+@app.route("/api/test-ai", methods=["GET"])
 def test_ai():
 
-    if request.method == "OPTIONS":
-        return ("", 204)
+    if not GAPGPT_API_KEY:
 
-    if not API_KEY:
-        return jsonify({
-            "ok": False,
-            "success": False,
-            "error": "OPENROUTER_API_KEY is not configured."
-        }), 500
+        return api_error(
+            "GAPGPT_API_KEY در Environment Variables تنظیم نشده است.",
+            500
+        )
 
-    messages = [
-        {
-            "role": "system",
-            "content": SYSTEM_PROMPT
-        },
-        {
-            "role": "user",
-            "content": "فقط بگو: BEHRAD AI فعال است 🚀"
-        }
-    ]
+    url = f"{GAPGPT_BASE_URL}/chat/completions"
+
+    payload = {
+        "model": DEFAULT_MODEL,
+        "messages": [
+            {
+                "role": "system",
+                "content": SYSTEM_PROMPT
+            },
+            {
+                "role": "user",
+                "content": "سلام! فقط یک جمله کوتاه برای تست بگو."
+            }
+        ],
+        "temperature": 0.7,
+        "max_tokens": 256
+    }
+
+    headers = {
+        "Authorization": f"Bearer {GAPGPT_API_KEY}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
 
     try:
 
-        data = normal_request(messages)
+        response = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=REQUEST_TIMEOUT
+        )
 
-        answer = extract_normal_answer(data)
+        if response.status_code >= 400:
+
+            return api_error(
+                f"GapGPT HTTP {response.status_code}",
+                response.status_code,
+                {
+                    "details": extract_error(response)
+                }
+            )
+
+        try:
+            data = response.json()
+
+        except Exception:
+
+            return api_error(
+                "پاسخ GapGPT JSON معتبر نبود.",
+                502,
+                {
+                    "raw": response.text[:2000]
+                }
+            )
+
+        answer = extract_answer(data)
 
         if not answer:
-            raise RuntimeError(
-                "OpenRouter returned an empty answer."
+
+            return api_error(
+                "GapGPT پاسخ متنی معتبری برنگرداند.",
+                502,
+                {
+                    "raw_response": data
+                }
             )
 
         return jsonify({
             "ok": True,
-            "success": True,
-            "model": MODEL,
             "answer": answer,
-            "reply": answer,
-            "response": answer
+            "model": data.get("model", DEFAULT_MODEL),
+            "provider": "GapGPT"
         })
 
-    except Exception as exc:
+    except requests.Timeout:
 
-        logger.exception("Test AI failed")
+        return api_error(
+            "زمان پاسخ GapGPT تمام شد.",
+            504
+        )
 
-        return jsonify({
-            "ok": False,
-            "success": False,
-            "error": str(exc)
-        }), 502
+    except requests.RequestException as e:
+
+        return api_error(
+            "ارتباط با GapGPT برقرار نشد.",
+            502,
+            {
+                "details": str(e)
+            }
+        )
+
+    except Exception as e:
+
+        return api_error(
+            "خطای داخلی هنگام تست GapGPT.",
+            500,
+            {
+                "details": str(e)
+            }
+        )
 
 
-# ============================================================
-# CHAT STREAM
-# ============================================================
+# ---------------------------------------------------------
+# Main Chat Endpoint
+# ---------------------------------------------------------
 
-@app.route(
-    "/api/chat",
-    methods=["GET", "POST", "OPTIONS"]
-)
+@app.route("/api/chat", methods=["POST"])
 def chat():
 
-    if request.method == "OPTIONS":
-        return ("", 204)
+    # -----------------------------------------------------
+    # API Key
+    # -----------------------------------------------------
 
-    if request.method == "GET":
-        return jsonify({
-            "ok": True,
-            "service": APP_NAME,
-            "streaming": True,
-            "message": "Use POST to stream an AI response.",
-            "method_required": "POST"
-        })
+    if not GAPGPT_API_KEY:
 
-    if not API_KEY:
-        return jsonify({
-            "ok": False,
-            "success": False,
-            "error": "OPENROUTER_API_KEY is not configured."
-        }), 500
+        return api_error(
+            "کلید GAPGPT_API_KEY روی سرور تنظیم نشده است.",
+            500
+        )
+
+    # -----------------------------------------------------
+    # Parse JSON
+    # -----------------------------------------------------
 
     try:
 
         body = request.get_json(
-            silent=True
+            force=False,
+            silent=False
         )
 
-        if not isinstance(body, dict):
-            return jsonify({
-                "ok": False,
-                "success": False,
-                "error": "Invalid JSON body."
-            }), 400
+    except Exception:
 
-        incoming = body.get("messages")
-
-        if incoming is None:
-
-            single_message = body.get(
-                "message"
-            )
-
-            if isinstance(single_message, str):
-                incoming = [
-                    {
-                        "role": "user",
-                        "content": single_message
-                    }
-                ]
-
-        messages = sanitize_messages(
-            incoming
+        return api_error(
+            "بدنه درخواست JSON معتبر نیست.",
+            400
         )
 
-        if not messages:
-            return jsonify({
-                "ok": False,
-                "success": False,
-                "error": "No valid messages were provided."
-            }), 400
+    if not isinstance(body, dict):
 
-        # سیستم خودمان همیشه اول باشد
-        messages = [
-            {
-                "role": "system",
-                "content": SYSTEM_PROMPT
-            }
-        ] + [
-            item
-            for item in messages
-            if item.get("role") != "system"
-        ]
-
-        # جلوگیری از رشد بی‌نهایت history
-        # آخرین 40 پیام + system
-        if len(messages) > 41:
-            messages = [
-                messages[0]
-            ] + messages[-40:]
-
-        use_web = True
-
-        current_request = is_current_request(
-            messages
+        return api_error(
+            "بدنه درخواست باید JSON باشد.",
+            400
         )
 
-        logger.info(
-            "STREAM CHAT | messages=%s | current=%s",
-            len(messages),
-            current_request
+    # -----------------------------------------------------
+    # Messages
+    # -----------------------------------------------------
+
+    incoming_messages = body.get("messages")
+
+    # پشتیبانی از فرمت ساده:
+    #
+    # {
+    #   "message": "سلام"
+    # }
+
+    if not incoming_messages:
+
+        simple_message = body.get("message")
+
+        if isinstance(simple_message, str) and simple_message.strip():
+
+            incoming_messages = [
+                {
+                    "role": "user",
+                    "content": simple_message.strip()
+                }
+            ]
+
+    if not incoming_messages:
+
+        return api_error(
+            "هیچ پیامی دریافت نشد.",
+            400
         )
 
-    except Exception as exc:
+    messages = build_messages(incoming_messages)
 
-        return jsonify({
-            "ok": False,
-            "success": False,
-            "error": str(exc)
-        }), 400
+    if len(messages) <= 1:
 
-    @stream_with_context
-    def generate():
-
-        started = time.time()
-
-        payload = build_payload(
-            messages,
-            use_web=use_web
+        return api_error(
+            "پیام قابل پردازشی وجود ندارد.",
+            400
         )
 
-        response = None
+    # -----------------------------------------------------
+    # Model
+    # -----------------------------------------------------
+
+    model = body.get("model")
+
+    if not isinstance(model, str) or not model.strip():
+
+        model = DEFAULT_MODEL
+
+    # -----------------------------------------------------
+    # Parameters
+    # -----------------------------------------------------
+
+    temperature = body.get("temperature", 0.7)
+
+    try:
+        temperature = float(temperature)
+
+    except Exception:
+        temperature = 0.7
+
+    temperature = max(
+        0.0,
+        min(temperature, 2.0)
+    )
+
+    max_tokens = body.get(
+        "max_tokens",
+        DEFAULT_MAX_TOKENS
+    )
+
+    try:
+        max_tokens = int(max_tokens)
+
+    except Exception:
+        max_tokens = DEFAULT_MAX_TOKENS
+
+    max_tokens = max(
+        256,
+        min(max_tokens, 16384)
+    )
+
+    # -----------------------------------------------------
+    # Streaming
+    # -----------------------------------------------------
+
+    stream = body.get("stream", True)
+
+    if isinstance(stream, str):
+
+        stream = stream.lower() == "true"
+
+    stream = bool(stream)
+
+    # -----------------------------------------------------
+    # GapGPT URL
+    # -----------------------------------------------------
+
+    url = f"{GAPGPT_BASE_URL}/chat/completions"
+
+    # -----------------------------------------------------
+    # Request
+    # -----------------------------------------------------
+
+    payload = {
+        "model": model,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "stream": stream
+    }
+
+    headers = {
+        "Authorization": f"Bearer {GAPGPT_API_KEY}",
+        "Content-Type": "application/json",
+        "Accept": "text/event-stream" if stream else "application/json"
+    }
+
+    # =====================================================
+    # STREAMING MODE
+    # =====================================================
+
+    if stream:
 
         try:
 
-            response = requests.post(
-                OPENROUTER_URL,
-                headers=headers(),
+            upstream = requests.post(
+                url,
+                headers=headers,
                 json=payload,
-
-                # مهم:
-                # stream=True باعث می‌شود کل پاسخ
-                # قبل از تحویل به مرورگر جمع نشود.
                 stream=True,
-
-                timeout=(30, 600)
+                timeout=REQUEST_TIMEOUT
             )
-
-            if response.status_code >= 400:
-
-                try:
-                    error_data = response.json()
-                except Exception:
-                    error_data = response.text
-
-                logger.error(
-                    "OpenRouter streaming HTTP %s: %s",
-                    response.status_code,
-                    error_data
-                )
-
-                yield sse({
-                    "type": "error",
-                    "error": (
-                        f"OpenRouter HTTP {response.status_code}"
-                    ),
-                    "details": error_data
-                })
-
-                yield sse({
-                    "type": "done",
-                    "ok": False
-                })
-
-                return
-
-            # شروع پاسخ
-            yield sse({
-                "type": "start",
-                "ok": True,
-                "model": MODEL,
-                "streaming": True,
-                "web": use_web
-            })
-
-            accumulated_length = 0
-
-            for raw_line in response.iter_lines(
-                decode_unicode=True
-            ):
-
-                if not raw_line:
-                    continue
-
-                line = raw_line.strip()
-
-                if not line:
-                    continue
-
-                # SSE معمولاً به شکل:
-                # data: {...}
-                if line.startswith("data:"):
-                    line = line[5:].strip()
-
-                if line == "[DONE]":
-                    break
-
-                try:
-                    chunk = json.loads(line)
-                except json.JSONDecodeError:
-
-                    # ممکن است بخشی از SSE خراب/غیر JSON باشد.
-                    # نادیده می‌گیریم تا stream قطع نشود.
-                    continue
-
-                # --------------------------------------------
-                # error
-                # --------------------------------------------
-
-                if "error" in chunk:
-
-                    yield sse({
-                        "type": "error",
-                        "error": chunk["error"]
-                    })
-
-                    continue
-
-                choices = chunk.get(
-                    "choices",
-                    []
-                )
-
-                if not choices:
-                    continue
-
-                choice = choices[0]
-
-                delta = choice.get(
-                    "delta",
-                    {}
-                )
-
-                content = delta.get(
-                    "content"
-                )
-
-                if content:
-
-                    text = normalize_content(
-                        content
-                    )
-
-                    if text:
-
-                        accumulated_length += len(
-                            text
-                        )
-
-                        yield sse({
-                            "type": "delta",
-                            "text": text,
-                            "length": accumulated_length
-                        })
-
-                # reasoning را به کاربر نشان نمی‌دهیم.
-                #
-                # فقط final content ارسال می‌شود.
-
-                finish_reason = choice.get(
-                    "finish_reason"
-                )
-
-                if finish_reason:
-
-                    yield sse({
-                        "type": "finish_reason",
-                        "value": finish_reason
-                    })
-
-                # usage ممکن است در chunk آخر بیاید
-                usage = chunk.get("usage")
-
-                if usage:
-
-                    yield sse({
-                        "type": "usage",
-                        "usage": usage
-                    })
-
-            elapsed = round(
-                time.time() - started,
-                2
-            )
-
-            yield sse({
-                "type": "done",
-                "ok": True,
-                "model": MODEL,
-                "elapsed": elapsed
-            })
 
         except requests.Timeout:
 
-            logger.exception(
-                "OpenRouter stream timeout"
+            return api_error(
+                "زمان پاسخ GapGPT تمام شد.",
+                504
             )
 
-            yield sse({
-                "type": "error",
-                "error": (
-                    "ارتباط با OpenRouter بیش از حد طول کشید."
-                )
-            })
+        except requests.RequestException as e:
 
-            yield sse({
-                "type": "done",
-                "ok": False
-            })
-
-        except requests.RequestException as exc:
-
-            logger.exception(
-                "OpenRouter network error"
+            return api_error(
+                "ارتباط با GapGPT برقرار نشد.",
+                502,
+                {
+                    "details": str(e)
+                }
             )
 
-            yield sse({
-                "type": "error",
-                "error": (
-                    "ارتباط با OpenRouter قطع شد."
-                ),
-                "details": str(exc)
-            })
+        if upstream.status_code >= 400:
 
-            yield sse({
-                "type": "done",
-                "ok": False
-            })
+            error_message = extract_error(upstream)
 
-        except GeneratorExit:
-
-            logger.info(
-                "Client disconnected."
+            retry_after = upstream.headers.get(
+                "Retry-After"
             )
 
-            raise
+            extra = {
+                "details": error_message,
+                "provider": "GapGPT"
+            }
 
-        except Exception as exc:
+            if retry_after:
+                extra["retry_after"] = retry_after
 
-            logger.exception(
-                "Streaming error"
+            return api_error(
+                f"GapGPT HTTP {upstream.status_code}",
+                upstream.status_code,
+                extra
             )
 
-            yield sse({
-                "type": "error",
-                "error": str(exc)
-            })
+        def generate():
 
-            yield sse({
-                "type": "done",
-                "ok": False
-            })
+            try:
 
-        finally:
+                for raw_line in upstream.iter_lines(
+                    decode_unicode=False
+                ):
 
-            if response is not None:
-                response.close()
+                    if not raw_line:
+                        continue
 
-    return Response(
-        generate(),
-        status=200,
-        mimetype="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-            "Access-Control-Allow-Origin": "*"
+                    # UTF-8 واقعی
+                    try:
+
+                        line = raw_line.decode(
+                            "utf-8",
+                            errors="replace"
+                        )
+
+                    except Exception:
+
+                        line = str(raw_line)
+
+                    # SSE
+                    if line.startswith("data:"):
+
+                        data_part = line[5:].strip()
+
+                        if data_part == "[DONE]":
+
+                            yield "data: [DONE]\n\n"
+                            break
+
+                        try:
+
+                            chunk = json.loads(
+                                data_part
+                            )
+
+                            yield (
+                                "data: "
+                                + json.dumps(
+                                    chunk,
+                                    ensure_ascii=False
+                                )
+                                + "\n\n"
+                            )
+
+                        except Exception:
+
+                            # اگر provider خط را JSON نکرده بود
+                            yield (
+                                "data: "
+                                + json.dumps(
+                                    {
+                                        "text": data_part
+                                    },
+                                    ensure_ascii=False
+                                )
+                                + "\n\n"
+                            )
+
+            finally:
+
+                try:
+                    upstream.close()
+
+                except Exception:
+                    pass
+
+        return Response(
+            generate(),
+            status=200,
+            mimetype="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+                "Access-Control-Allow-Origin": "*"
+            }
+        )
+
+    # =====================================================
+    # NORMAL JSON MODE
+    # =====================================================
+
+    try:
+
+        response = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=REQUEST_TIMEOUT
+        )
+
+    except requests.Timeout:
+
+        return api_error(
+            "زمان پاسخ GapGPT تمام شد.",
+            504
+        )
+
+    except requests.RequestException as e:
+
+        return api_error(
+            "ارتباط با GapGPT برقرار نشد.",
+            502,
+            {
+                "details": str(e)
+            }
+        )
+
+    # -----------------------------------------------------
+    # Provider error
+    # -----------------------------------------------------
+
+    if response.status_code >= 400:
+
+        error_message = extract_error(response)
+
+        extra = {
+            "details": error_message,
+            "provider": "GapGPT"
         }
-    )
+
+        retry_after = response.headers.get(
+            "Retry-After"
+        )
+
+        if retry_after:
+            extra["retry_after"] = retry_after
+
+        return api_error(
+            f"GapGPT HTTP {response.status_code}",
+            response.status_code,
+            extra
+        )
+
+    # -----------------------------------------------------
+    # JSON
+    # -----------------------------------------------------
+
+    try:
+
+        data = response.json()
+
+    except Exception:
+
+        return api_error(
+            "GapGPT پاسخ JSON معتبر برنگرداند.",
+            502,
+            {
+                "raw": response.text[:3000]
+            }
+        )
+
+    # -----------------------------------------------------
+    # Extract answer
+    # -----------------------------------------------------
+
+    answer = extract_answer(data)
+
+    if not answer:
+
+        return api_error(
+            "GapGPT پاسخ متنی قابل استفاده‌ای برنگرداند.",
+            502,
+            {
+                "raw_response": data
+            }
+        )
+
+    # -----------------------------------------------------
+    # Final response
+    # -----------------------------------------------------
+
+    return jsonify({
+        "ok": True,
+        "answer": answer,
+        "reply": answer,
+        "response": answer,
+        "model": data.get("model", model),
+        "provider": "GapGPT",
+        "usage": data.get("usage")
+    })
 
 
-# ============================================================
-# RUN
-# ============================================================
+# ---------------------------------------------------------
+# Global error handler
+# ---------------------------------------------------------
+
+@app.errorhandler(404)
+def not_found(error):
+
+    return jsonify({
+        "ok": False,
+        "error": "مسیر موردنظر پیدا نشد.",
+        "service": "BEHRAD AI"
+    }), 404
+
+
+@app.errorhandler(405)
+def method_not_allowed(error):
+
+    return jsonify({
+        "ok": False,
+        "error": "Method برای این مسیر مجاز نیست.",
+        "service": "BEHRAD AI"
+    }), 405
+
+
+@app.errorhandler(500)
+def internal_error(error):
+
+    return jsonify({
+        "ok": False,
+        "error": "خطای داخلی سرور BEHRAD AI.",
+        "service": "BEHRAD AI"
+    }), 500
+
+
+# ---------------------------------------------------------
+# Local development
+# ---------------------------------------------------------
 
 if __name__ == "__main__":
 
     port = int(
-        os.environ.get(
-            "PORT",
-            "5000"
-        )
+        os.getenv("PORT", "5000")
     )
+
+    print("=" * 60)
+    print("BEHRAD AI")
+    print("Provider: GapGPT")
+    print(f"Model: {DEFAULT_MODEL}")
+    print(f"API configured: {bool(GAPGPT_API_KEY)}")
+    print(f"Base URL: {GAPGPT_BASE_URL}")
+    print("=" * 60)
 
     app.run(
         host="0.0.0.0",
         port=port,
-        debug=False,
-        threaded=True
+        debug=False
         )
